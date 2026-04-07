@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 11:25:32 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/07 11:27:31 by igngonza         ###   ########.fr       */
+/*   Updated: 2026/04/07 12:50:02 by igngonza         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  const char *config_path = (argc == 2) ? argv[1] : "config/default.conf";
+  std::string config_path = (argc == 2) ? argv[1] : "config/default.conf";
 
   try {
     // 1. Parse Configuration
