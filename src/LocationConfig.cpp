@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 13:49:25 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/07 13:50:58 by igngonza         ###   ########.fr       */
+/*   Updated: 2026/04/07 17:14:15 by igngonza         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,13 @@ const std::map<std::string, std::string> &LocationConfig::getCgiPass() const {
   return _cgiPass;
 }
 long LocationConfig::getClientMaxBodySize() const { return _clientMaxBodySize; }
+
+std::vector<std::string> &LocationConfig::getAllowedMethods() {
+  return _allowedMethods;
+}
+std::vector<std::string> &LocationConfig::getIndexFiles() {
+  return _indexFiles;
+}
 
 void LocationConfig::setPath(const std::string &path) { _path = path; }
 void LocationConfig::setRoot(const std::string &root) { _root = root; }

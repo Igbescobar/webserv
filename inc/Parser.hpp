@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:17:18 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/07 14:19:46 by igngonza         ###   ########.fr       */
+/*   Updated: 2026/04/07 17:06:54 by igngonza         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ private:
 
   void tokenizeFile(const std::string &filename);
   void parseServerBlock(std::vector<ServerConfig> &servers);
-  void parseLocationBlock(LocationConfig &location, ServerConfig &server);
+  void parseLocationBlock(ServerConfig &server, const LocationConfig &defaults);
 
   const std::string &getNextToken();
   const std::string &peekNextToken() const;

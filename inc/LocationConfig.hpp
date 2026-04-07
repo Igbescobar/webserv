@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 13:11:08 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/07 13:11:30 by igngonza         ###   ########.fr       */
+/*   Updated: 2026/04/07 17:13:38 by igngonza         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,9 @@ public:
   const std::string &getUploadPath() const;
   const std::map<std::string, std::string> &getCgiPass() const;
   long getClientMaxBodySize() const;
+
+  std::vector<std::string> &getAllowedMethods();
+  std::vector<std::string> &getIndexFiles();
 
   void setPath(const std::string &path);
   void setRoot(const std::string &root);
