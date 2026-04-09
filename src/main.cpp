@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 11:25:32 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/08 16:49:30 by fdurban-         ###   ########.fr       */
+/*   Updated: 2026/04/09 16:57:01 by fdurban-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <cstring>
+#include <fcntl.h>
 
 int main(int argc, char **argv) {
   if (argc > 2) {
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
 	struct sockaddr_in addr;
 	addr.sin_family =  AF_INET;
 	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = inet_addr("10.13.10.1");
+	addr.sin_addr.s_addr = inet_addr("10.13.10.2");
 	if(bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
 	{
 		std::cout<<"Error in bind, port might be already in use"<<std::endl;
@@ -61,34 +62,36 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 	std::cout << "Esperando conexiones...\n";
-	int client_fd = accept(server_fd, NULL, NULL);
-	if(client_fd == -1)
+	while(true)
 	{
-		std::cout<<"Error accepting client"<<std::endl;
-		return 1;
+		int client_fd = accept(server_fd, NULL, NULL);   // bloqueante → espera hasta que llegue un cliente
+		std::cout << "¡Cliente conectado! fd: " << client_fd << "\n";
+		int flags = fcntl(client_fd, F_GETFL, 0);
+		// aquí client_fd ya existe, la conexión TCP está establecida
+		fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+		char buffer[4096];
+		std::memset(buffer, 0, sizeof(buffer));
+		ssize_t bytes_received;
+		bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+		if (bytes_received > 0)
+		{
+			std::cout << "\n--- DATOS RECIBIDOS ---\n";
+			std::cout << buffer;
+			std::cout << "\n-----------------------\n";
+			const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHola Mundo!\n";
+			send(client_fd, response, std::strlen(response), 0);
+		}
+		else if (bytes_received == 0)
+		{
+			std::cout << "El cliente cerró la conexión antes de enviar nada.\n";
+		}
+		else
+		{
+			std::cerr << "Error en recv\n";
+		}
+		close(client_fd);
 	}
-	std::cout << "¡Cliente conectado! fd: " << client_fd << "\n";
-	char buffer[4096];
-	std::memset(buffer, 0, sizeof(buffer));
-	ssize_t bytes_received;
-	bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-	if (bytes_received > 0)
-	{
-		std::cout << "\n--- DATOS RECIBIDOS ---\n";
-		std::cout << buffer;
-		std::cout << "\n-----------------------\n";
-		const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHola Mundo!\n";
-		send(client_fd, response, std::strlen(response), 0);
-	}
-	else if (bytes_received == 0)
-	{
-		std::cout << "El cliente cerró la conexión antes de enviar nada.\n";
-	}
-	else
-	{
-		std::cerr << "Error en recv\n";
-	}
-	close(client_fd);
+	//close(client_fd);
 	close(server_fd);
 	/*
 	while(1)
