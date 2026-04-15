@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 11:25:32 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/15 16:06:51 by fdurban-         ###   ########.fr       */
+/*   Updated: 2026/04/15 16:39:35 by fdurban-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	struct sockaddr_in addr;
 	addr.sin_family =  AF_INET;
 	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = inet_addr("10.13.9.4");
+	addr.sin_addr.s_addr = INADDR_ANY;
 	if(bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
 	{
 		std::cout<<"Error in bind, port might be already in use"<<std::endl;
