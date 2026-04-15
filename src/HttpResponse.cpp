@@ -1,4 +1,5 @@
 #include "../inc/HttpResponse.hpp"
+#include <sstream>
 
 HttpResponse::HttpResponse()
     : version("HTTP/1.1"), statusCode(200), statusMessage("OK") {}
@@ -46,4 +47,21 @@ void HttpResponse::setBody(const std::string &body) {
   std::stringstream ss;
   ss << this->body.length();
   setHeader("Content-Length", ss.str());
+}
+
+std::string HttpResponse::toString() const {
+  std::stringstream responseStream;
+
+  responseStream << this->version << " " << this->statusCode << " "
+                 << this->statusMessage << "\r\n";
+
+  std::map<std::string, std::string>::const_iterator it;
+  for (it = this->headers.begin(); it != this->headers.end(); it++)
+    responseStream << it->first << ":" << it->second << "\r\n";
+
+  responseStream << "\r\n";
+
+  responseStream << this->body;
+
+  return responseStream.str();
 }
