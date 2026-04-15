@@ -6,7 +6,7 @@
 /*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 11:25:32 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/13 16:59:17 by fdurban-         ###   ########.fr       */
+/*   Updated: 2026/04/15 16:06:51 by fdurban-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,9 @@
 #include <fcntl.h>
 #include <vector>
 #include <poll.h>
+#include <sys/epoll.h>
+
+#define MAX_EVENTS 64
 int main(int argc, char **argv) {
   if (argc > 2) {
     std::cerr << "Usage: " << argv[0] << " [configuration_file]" << std::endl;
@@ -50,7 +53,7 @@ int main(int argc, char **argv) {
 	struct sockaddr_in addr;
 	addr.sin_family =  AF_INET;
 	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = inet_addr("10.13.10.3");
+	addr.sin_addr.s_addr = inet_addr("10.13.9.4");
 	if(bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
 	{
 		std::cout<<"Error in bind, port might be already in use"<<std::endl;
@@ -62,78 +65,69 @@ int main(int argc, char **argv) {
 		std::cout<<"Error server listening"<<std::endl;
 		return -1;
 	}
-	  std::vector<struct pollfd> fds;
+	int epoll_fd = epoll_create1(0);
+	if (epoll_fd == -1) {
+		std::cerr << "Error en epoll_create1\n";
+		return 1;
+	}
+	struct epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = server_fd;
+	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
 
-    // Añadir server_fd como primer elemento
-    struct pollfd server_pfd;
-    server_pfd.fd = server_fd;
-    server_pfd.events = POLLIN;   // queremos saber cuando haya datos/conexiones
-    server_pfd.revents = 0;
-    fds.push_back(server_pfd);
+	struct epoll_event events[MAX_EVENTS];
 
-    while (true) {
-        std::cout << "Esperando actividad en " << fds.size() << " fds...\n";
+	while (true) {
+		std::cout << "Esperando actividad...\n";
 
-        // Poll NO reconstruye — el vector persiste entre iteraciones
-        int ready = poll(fds.data(), fds.size(), -1);
-        if (ready == -1) {
-            std::cerr << "Error en poll\n";
-            break;
-        }
+		int ready = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		if (ready == -1) {
+			std::cerr << "Error en epoll_wait\n";
+		break;
+        	}
 
-        std::cout << ready << " fd(s) listos\n";
+		std::cout << ready << " fd(s) listos\n";
 
-        // Iterar sobre todos los fds para ver cuáles tienen actividad
-        for (size_t i = 0; i < fds.size(); i++) {
+		for (int i = 0; i < ready; i++) {
+			int fd = events[i].data.fd;
 
-            // revents — lo que OCURRIÓ (el kernel lo rellena)
-            // events  — lo que PEDISTE (tú lo rellenas, el kernel no lo toca)
-            if (!(fds[i].revents & POLLIN))
-                continue;
+			if (fd == server_fd) {
+				int client_fd = accept(server_fd, NULL, NULL);
+				std::cout << "Cliente conectado: fd=" << client_fd << "\n";
 
-            if (fds[i].fd == server_fd) {
-                // Conexión nueva
-                int client_fd = accept(server_fd, NULL, NULL);
-                std::cout << "Cliente conectado: fd=" << client_fd << "\n";
-
-                struct pollfd client_pfd;
-                client_pfd.fd = client_fd;
-                client_pfd.events = POLLIN;
-		std::cout<<"Valor de POLLIN: "<<POLLIN<<std::endl;
-                client_pfd.revents = 0;
-                fds.push_back(client_pfd);  // añadir al vector — persiste
-            } else {
-                // Datos de un cliente existente
-                char buffer[4096];
-                std::memset(buffer, 0, sizeof(buffer));
-                ssize_t bytes = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
-
-                if (bytes > 0) {
-                    std::cout << "REQUEST fd=" << fds[i].fd << ":\n" << buffer << "\n";
-                    const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHola Mundo!\n";
-                    send(fds[i].fd, response, strlen(response), 0);
-                    close(fds[i].fd);
-                    fds.erase(fds.begin() + i);  // eliminar del vector
-                    i--;  // ajustar índice tras erase
-                } else if (bytes == 0) {
-                    std::cout << "Cliente fd=" << fds[i].fd << " desconectado\n";
-                    close(fds[i].fd);
-                    fds.erase(fds.begin() + i);
-                    i--;
-                } else {
-                    std::cerr << "Error en recv fd=" << fds[i].fd << "\n";
-                    close(fds[i].fd);
-                    fds.erase(fds.begin() + i);
-                    i--;
-                }
-            }
-        }
-    }
-
-    close(server_fd);
-    return 0;
-    std::cout << "Server starting with config: " << config_path << std::endl;
-
+				struct epoll_event client_ev;
+				client_ev.events = EPOLLIN;
+				client_ev.data.fd = client_fd;
+				epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_ev);
+			}
+			else {
+				char buffer[4096];
+				std::memset(buffer, 0, sizeof(buffer));
+				ssize_t bytes = recv(fd, buffer, sizeof(buffer) - 1, 0);
+				if (bytes > 0) {
+					std::cout << "REQUEST fd=" << fd << ":\n" << buffer << "\n";
+				const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHola Mundo!\n";
+				send(fd, response, strlen(response), 0);
+				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+				close(fd);
+			}
+			else if (bytes == 0) {
+				std::cout << "Cliente fd=" << fd << " desconectado\n";
+				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+				close(fd);
+			}
+			else {
+				std::cerr << "Error en recv fd=" << fd << "\n";
+				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+				close(fd);
+			}
+		}
+	}
+}
+	close(epoll_fd);
+	close(server_fd);
+	return 0;
+	std::cout << "Server starting with config: " << config_path << std::endl;
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
