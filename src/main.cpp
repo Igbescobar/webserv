@@ -1,18 +1,21 @@
-#include "Parser.hpp"
+#include "../inc/ConfigParser.hpp"
 
 int main() {
-    try {
-        Parser p;
-        p.tokenizeFile("test.conf");
+  try {
+    ConfigParser parser;
+    parser.parse("config/default.conf");
 
-        const std::vector<std::string>& results = p.getTokens();
-        std::cout << "Tokens found:" << std::endl;
-        for (size_t i = 0; i < results.size(); ++i) {
-            std::cout << "[" << i << "] -> " << results[i] << std::endl;
-        }
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return 1;
+    const std::vector<ServerConfig> &servers = parser.getServerConfigs();
+    for (size_t i = 0; i < servers.size(); ++i) {
+      std::cout << "Server " << i << " listen values:\n";
+      const std::vector<std::string> &listens = servers[i].getListen();
+      for (size_t j = 0; j < listens.size(); ++j) {
+        std::cout << "  [" << j << "] " << listens[j] << std::endl;
+      }
     }
-    return 0;
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
+  return 0;
 }
