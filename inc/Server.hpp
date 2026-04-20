@@ -11,6 +11,7 @@
 	"Content-Length: 12\n" \
 	"\n" \
 	"Hello world!"
+#define BUF_SIZE 4096
 
 class Server {
 	private:
@@ -18,16 +19,25 @@ class Server {
 		int epoll_fd;
 		struct epoll_event events[MAX_EVENTS];
 
-		void socket_setup();
 		void socket_create();
 		void socket_bind();
 		void socket_listen();
 
-		void handle_event(int fd);
+		void handle_event(int fd, uint32_t events);
 		void handle_events(int n);
 
-		void epoll_setup();
-		void epoll_add(int fd);
+		void handle_server();
+		void handle_client(int fd, uint32_t events);
+
+		void client_read(int fd);
+		void client_write(int fd);
+
+		void epoll_create();
+		void epoll_read(int fd);
+		void epoll_write(int fd);
+		void epoll_remove(int fd);
+
+		void non_blocking(int fd);
 
 	public:
 		Server();
