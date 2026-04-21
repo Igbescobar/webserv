@@ -14,6 +14,7 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &other) {
     this->root = other.root;
     this->clientMaxBodySize = other.clientMaxBodySize;
     this->indexFiles = other.indexFiles;
+    this->errorPages = other.errorPages;
   }
   return *this;
 }
@@ -36,6 +37,10 @@ const std::vector<std::string> &ServerConfig::getIndexFiles() const {
   return this->indexFiles;
 }
 
+const std::map<int, std::string> &ServerConfig::getErrorPages() const {
+  return this->errorPages;
+}
+
 void ServerConfig::setListen(const std::string &listen_directive) {
   this->listen.push_back(listen_directive);
 }
@@ -52,4 +57,8 @@ void ServerConfig::setClientMaxBodySize(const long &size) {
 
 void ServerConfig::setIndexFile(const std::string &file) {
   this->indexFiles.push_back(file);
+}
+
+void ServerConfig::setErrorPage(int code, const std::string &path) {
+  this->errorPages[code] = path;
 }

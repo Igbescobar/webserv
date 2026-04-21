@@ -17,6 +17,7 @@ public:
   ~ConfigParser();
 
   void parse(const std::string &configPath);
+  void validateServerConfigs() const;
   const std::vector<ServerConfig> &getServerConfigs() const;
 
 private:
@@ -40,6 +41,7 @@ private:
   void parseRoot(ServerConfig &config);
   void parseClientMaxBodySize(ServerConfig &config);
   void parseIndex(ServerConfig &config);
+  void parseErrorPage(ServerConfig &config);
 
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
@@ -61,6 +63,10 @@ private:
   long validateMaxBodySize(const std::string &rawValue) const;
   std::string getNumberPart(const std::string &rawValue) const;
   long getMultiplier(const std::string &rawValue) const;
+
+  std::vector<int> collectErrorCodes();
+  int validateAndParseErrorCode(const std::string &codeStr) const;
+  std::string getErrorPagePath();
 
   void validateHasValue(const std::string &directive) const;
   void validateOnlyOneValue(const std::string &directive) const;

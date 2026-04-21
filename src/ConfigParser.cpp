@@ -1,5 +1,7 @@
 #include "../inc/ConfigParser.hpp"
 #include "../inc/ServerConfig.hpp"
+#include <cstdlib>
+#include <stdexcept>
 
 ConfigParser::ConfigParser() : tokenPosition(0) {}
 
@@ -102,6 +104,8 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
     parseClientMaxBodySize(config);
   } else if (directive == "index") {
     parseIndex(config);
+  } else if (directive == "error_page") {
+    parseErrorPage(config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }
@@ -374,6 +378,47 @@ void ConfigParser::parseIndex(ServerConfig &config) {
   validateSemicolon();
 }
 
+void ConfigParser::parseErrorPage(ServerConfig &config) {
+  consumeToken("error_page");
+
+  std::vector<int> codes = collectErrorCodes();
+  std::string page = getErrorPagePath();
+
+  for (size_t i = 0; i < codes.size(); i++)
+    config.setErrorPage(codes[i], page);
+
+  validateSemicolon();
+}
+
+std::vector<int> ConfigParser::collectErrorCodes() {
+  std::vector<int> codes;
+  while (hasMoreTokens() && isFullNumber(peekToken())) {
+    codes.push_back(validateAndParseErrorCode(peekToken()));
+    this->tokenPosition++;
+  }
+  if (codes.empty())
+    throw std::runtime_error(
+        "Directive error_pages requires at least one error code");
+  return codes;
+}
+
+int ConfigParser::validateAndParseErrorCode(const std::string &codeStr) const {
+  if (!isFullNumber(codeStr))
+    throw std::runtime_error("Invalid error code: " + codeStr);
+  long code = atol(codeStr.c_str());
+  if (code < 300 || code > 599) {
+    throw std::runtime_error("Error code out of range (300 - 599): " + codeStr);
+  }
+  return static_cast<int>(code);
+}
+
+std::string ConfigParser::getErrorPagePath() {
+  validateHasValue("error_page path");
+  const std::string &page = peekToken();
+  this->tokenPosition++;
+  return page;
+}
+
 void ConfigParser::validateSemicolon() { consumeToken(";"); }
 
 void ConfigParser::skipComment(const std::string &content, size_t &index) {
@@ -395,4 +440,30 @@ void ConfigParser::pushCurrentToken(std::string &token) {
 
 bool ConfigParser::isWhitespace(char c) const {
   return std::isspace(static_cast<unsigned char>(c));
+}
+
+void ConfigParser::validateServerConfigs() const {
+  if (this->serverConfigs.empty()) {
+    throw std::runtime_error(
+        "Configuration file must contain at least one server block.");
+  }
+
+  for (size_t i = 0; i < this->serverConfigs.size(); ++i) {
+    const ServerConfig &config = this->serverConfigs[i];
+
+    if (config.getListen().empty()) {
+      std::stringstream errorMsg;
+      errorMsg << "Server " << i
+               << " is missing a required 'listen' directive.";
+      throw std::runtime_error(errorMsg.str());
+    }
+
+    if (config.getRoot().empty()) {
+      std::stringstream errorMsg;
+      errorMsg << "Server " << i << " is missing a required 'root' directive.";
+      throw std::runtime_error(errorMsg.str());
+    }
+
+    // check different servers with same ip and port
+  }
 }

@@ -17,12 +17,14 @@ public:
   const std::string &getRoot() const;
   long getClientMaxBodySize() const;
   const std::vector<std::string> &getIndexFiles() const;
+  const std::map<int, std::string> &getErrorPages() const;
 
   void setListen(const std::string &listen_directive);
   void setServerName(const std::string &serverName);
   void setRoot(const std::string &root);
   void setClientMaxBodySize(const long &size);
   void setIndexFile(const std::string &file);
+  void setErrorPage(int code, const std::string &path);
 
 private:
   std::vector<std::string> listen;
@@ -30,6 +32,7 @@ private:
   std::string root;
   long clientMaxBodySize;
   std::vector<std::string> indexFiles;
+  std::map<int, std::string> errorPages;
 };
 
 #endif
