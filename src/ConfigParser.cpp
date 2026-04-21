@@ -90,10 +90,12 @@ void ConfigParser::parseServerBlock() {
 }
 
 void ConfigParser::parseServerDirective(ServerConfig &config) {
-  const std::string &directive = this->peekToken();
+  const std::string &directive = peekToken();
 
   if (directive == "listen") {
     parseListen(config);
+  } else if (directive == "server_name") {
+    parseServerName(&config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }
@@ -117,27 +119,43 @@ void ConfigParser::parseListen(ServerConfig &config) {
 }
 
 std::string ConfigParser::normalizeListen(const std::string &raw) {
-  std::string host = "0.0.0.0";
-  std::string port = "8080";
-  size_t colonPos = raw.find(':');
+  std::string host = extractHost(raw);
+  std::string port = extractPort(raw);
 
-  if (colonPos != std::string::npos) {
-    host = raw.substr(0, colonPos);
-    port = raw.substr(colonPos + 1);
-  } else if (isFullNumber(raw)) {
-    port = raw;
-  } else {
-    host = raw;
-  }
-
-  if (host == "localhost") {
-    host = "127.0.0.1";
-  }
-
+  host = normalizeHost(host);
   validateIP(host);
   validatePort(port);
 
   return host + ":" + port;
+}
+
+std::string ConfigParser::extractHost(const std::string &raw) const {
+  size_t colonPos = raw.find(':');
+  if (colonPos != std::string::npos) {
+    return raw.substr(0, colonPos);
+  } else if (isFullNumber(raw)) {
+    return "0.0.0.0";
+  } else {
+    return raw;
+  }
+}
+
+std::string ConfigParser::extractPort(const std::string &raw) const {
+  size_t colonPos = raw.find(':');
+  if (colonPos != std::string::npos) {
+    return raw.substr(colonPos + 1);
+  } else if (isFullNumber(raw)) {
+    return raw;
+  } else {
+    return "8080";
+  }
+}
+
+std::string ConfigParser::normalizeHost(const std::string &host) const {
+  if (host == "localhost") {
+    return "127.0.0.1";
+  }
+  return host;
 }
 
 bool ConfigParser::isFullNumber(const std::string &str) const {
@@ -198,6 +216,46 @@ size_t ConfigParser::countChar(const std::string &str, char c) const {
     }
   }
   return count;
+}
+
+void ConfigParser::parseServerName(ServerConfig *config) {
+  consumeToken("server_name");
+  while (hasMoreTokens() && !isDelimiter(peekToken()[0])) {
+    std::string name = peekToken();
+    if (validateServerName(*config, name))
+      config->addServerName(peekToken());
+    this->tokenPosition++;
+  }
+  validateSemicolon();
+}
+
+bool ConfigParser::validateServerName(const ServerConfig &config,
+                                      const std::string &name) const {
+  return (isValidSizeName(name) && containsValidChars(name) &&
+          !isDuplicateServerName(config, name));
+}
+
+bool ConfigParser::isValidSizeName(const std::string &name) const {
+  return (!name.empty() && name.length() <= 255);
+}
+
+bool ConfigParser::containsValidChars(const std::string &name) const {
+  for (size_t i = 0; i < name.length(); ++i) {
+    char c = name[i];
+    if (!(std::isalnum(c) || c == '-' || c == '.' || c == '_'))
+      return false;
+  }
+  return true;
+}
+
+bool ConfigParser::isDuplicateServerName(const ServerConfig &config,
+                                         const std::string &name) const {
+  const std::vector<std::string> &names = config.getServerNames();
+  for (size_t i = 0; i < names.size(); ++i) {
+    if (names[i] == name)
+      return true;
+  }
+  return false;
 }
 
 void ConfigParser::validateSemicolon() { consumeToken(";"); }

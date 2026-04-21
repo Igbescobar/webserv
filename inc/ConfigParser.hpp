@@ -34,14 +34,24 @@ private:
   const std::vector<std::string> &getTokens() const;
 
   void parseServerBlock();
-  void parseListen(ServerConfig &config);
   void parseServerDirective(ServerConfig &config);
+  void parseListen(ServerConfig &config);
+  void parseServerName(ServerConfig *config);
   std::string normalizeListen(const std::string &raw);
+  std::string extractHost(const std::string &raw) const;
+  std::string extractPort(const std::string &raw) const;
+  std::string normalizeHost(const std::string &host) const;
   bool isFullNumber(const std::string &str) const;
   void validatePort(const std::string &portStr) const;
   void validateIP(const std::string &ip) const;
   bool isValidOctet(const std::string &octet) const;
   size_t countChar(const std::string &str, char c) const;
+  bool validateServerName(const ServerConfig &config,
+                          const std::string &name) const;
+  bool isValidSizeName(const std::string &name) const;
+  bool containsValidChars(const std::string &name) const;
+  bool isDuplicateServerName(const ServerConfig &config,
+                             const std::string &name) const;
 
   void skipComment(const std::string &content, size_t &index);
   void pushCurrentToken(std::string &token);
