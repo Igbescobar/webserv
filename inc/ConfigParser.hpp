@@ -36,8 +36,10 @@ private:
   void parseServerBlock();
   void parseServerDirective(ServerConfig &config);
   void parseListen(ServerConfig &config);
-  void parseServerName(ServerConfig *config);
-  void parseRoot(ServerConfig *config);
+  void parseServerName(ServerConfig &config);
+  void parseRoot(ServerConfig &config);
+  void parseClientMaxBodySize(ServerConfig &config);
+
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
   std::string extractPort(const std::string &raw) const;
@@ -47,15 +49,21 @@ private:
   void validateIP(const std::string &ip) const;
   bool isValidOctet(const std::string &octet) const;
   size_t countChar(const std::string &str, char c) const;
-  bool validateServerName(const ServerConfig &config,
+
+  void validateServerName(const ServerConfig &config,
                           const std::string &name) const;
   bool isValidSizeName(const std::string &name) const;
   bool containsValidChars(const std::string &name) const;
   bool isDuplicateServerName(const ServerConfig &config,
                              const std::string &name) const;
+
+  long validateMaxBodySize(const std::string &rawValue) const;
+  std::string getNumberPart(const std::string &rawValue) const;
+  long getMultiplier(const std::string &rawValue) const;
+
   void validateHasValue(const std::string &directive) const;
   void validateOnlyOneValue(const std::string &directive) const;
-  void validateRootNotDuplicate(const ServerConfig *config) const;
+  void validateNotDuplicate(const std::string &directive, bool isSet) const;
   void skipComment(const std::string &content, size_t &index);
   void pushCurrentToken(std::string &token);
   bool isDelimiter(char c) const;

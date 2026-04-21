@@ -15,15 +15,18 @@ public:
   const std::vector<std::string> &getListen() const;
   const std::vector<std::string> &getServerNames() const;
   const std::string &getRoot() const;
+  long getClientMaxBodySize() const;
 
-  void addListen(const std::string &listen_directive);
-  void addServerName(const std::string &serverName);
-  void addRoot(const std::string &root);
+  void setListen(const std::string &listen_directive);
+  void setServerName(const std::string &serverName);
+  void setRoot(const std::string &root);
+  void setClientMaxBodySize(const long &size);
 
 private:
   std::vector<std::string> listen;
   std::vector<std::string> serverNames;
   std::string root;
+  long clientMaxBodySize;
 };
 
 #endif

@@ -95,9 +95,11 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
   if (directive == "listen") {
     parseListen(config);
   } else if (directive == "server_name") {
-    parseServerName(&config);
+    parseServerName(config);
   } else if (directive == "root") {
-    parseRoot(&config);
+    parseRoot(config);
+  } else if (directive == "client_max_body_size") {
+    parseClientMaxBodySize(config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }
@@ -106,16 +108,14 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
 void ConfigParser::parseListen(ServerConfig &config) {
   consumeToken("listen");
 
-  if (!hasMoreTokens() || isDelimiter(peekToken()[0])) {
-    throw std::runtime_error("Directive 'listen' requires a value.");
-  }
+  validateHasValue("listen");
 
   std::string rawValue = peekToken();
   this->tokenPosition++;
 
   std::string normalizedValue = normalizeListen(rawValue);
 
-  config.addListen(normalizedValue);
+  config.setListen(normalizedValue);
 
   validateSemicolon();
 }
@@ -220,21 +220,35 @@ size_t ConfigParser::countChar(const std::string &str, char c) const {
   return count;
 }
 
-void ConfigParser::parseServerName(ServerConfig *config) {
+void ConfigParser::parseServerName(ServerConfig &config) {
   consumeToken("server_name");
+  validateHasValue("server_name");
   while (hasMoreTokens() && !isDelimiter(peekToken()[0])) {
     std::string name = peekToken();
-    if (validateServerName(*config, name))
-      config->addServerName(peekToken());
+
+    validateServerName(config, name);
+
+    config.setServerName(name);
     this->tokenPosition++;
   }
+
   validateSemicolon();
 }
 
-bool ConfigParser::validateServerName(const ServerConfig &config,
+void ConfigParser::validateServerName(const ServerConfig &config,
                                       const std::string &name) const {
-  return (isValidSizeName(name) && containsValidChars(name) &&
-          !isDuplicateServerName(config, name));
+  if (!isValidSizeName(name)) {
+    throw std::runtime_error("Invalid server_name: '" + name +
+                             "' has an invalid size.");
+  }
+  if (!containsValidChars(name)) {
+    throw std::runtime_error("Invalid server_name: '" + name +
+                             "' contains invalid characters.");
+  }
+  if (isDuplicateServerName(config, name)) {
+    throw std::runtime_error("Duplicate server_name: '" + name +
+                             "' is already defined for this server.");
+  }
 }
 
 bool ConfigParser::isValidSizeName(const std::string &name) const {
@@ -260,13 +274,13 @@ bool ConfigParser::isDuplicateServerName(const ServerConfig &config,
   return false;
 }
 
-void ConfigParser::parseRoot(ServerConfig *config) {
+void ConfigParser::parseRoot(ServerConfig &config) {
   consumeToken("root");
 
   validateHasValue("root");
-  validateRootNotDuplicate(config);
+  validateNotDuplicate("root", !config.getRoot().empty());
 
-  config->addRoot(peekToken());
+  config.setRoot(peekToken());
   this->tokenPosition++;
 
   validateOnlyOneValue("root");
@@ -286,10 +300,62 @@ void ConfigParser::validateOnlyOneValue(const std::string &directive) const {
   }
 }
 
-void ConfigParser::validateRootNotDuplicate(const ServerConfig *config) const {
-  if (!config->getRoot().empty()) {
-    throw std::runtime_error("Duplicate 'root' directive found.");
+void ConfigParser::validateNotDuplicate(const std::string &directive,
+                                        bool isSet) const {
+  if (isSet) {
+    throw std::runtime_error("Duplicate '" + directive + "' directive found.");
   }
+}
+
+void ConfigParser::parseClientMaxBodySize(ServerConfig &config) {
+  consumeToken("client_max_body_size");
+
+  validateHasValue("client_max_body_size");
+  validateNotDuplicate("client_max_body_size",
+                       config.getClientMaxBodySize() != -1);
+
+  long validatedValue = validateMaxBodySize(peekToken());
+  config.setClientMaxBodySize(validatedValue);
+  this->tokenPosition++;
+
+  validateOnlyOneValue("client_max_body_size");
+  validateSemicolon();
+}
+
+long ConfigParser::validateMaxBodySize(const std::string &rawValue) const {
+  std::string numberPart = getNumberPart(rawValue);
+  long multiplier = getMultiplier(rawValue);
+
+  if (!isFullNumber(numberPart)) {
+    throw std::runtime_error("Invalid number for client_max_body_size: " +
+                             numberPart);
+  }
+
+  long size = std::atol(numberPart.c_str());
+  return size * multiplier;
+}
+
+std::string ConfigParser::getNumberPart(const std::string &rawValue) const {
+  char lastChar = rawValue[rawValue.length() - 1];
+  if (!std::isdigit(lastChar)) {
+    return rawValue.substr(0, rawValue.length() - 1);
+  }
+  return rawValue;
+}
+
+long ConfigParser::getMultiplier(const std::string &rawValue) const {
+  char lastChar = rawValue[rawValue.length() - 1];
+  if (!std::isdigit(lastChar)) {
+    if (lastChar == 'k' || lastChar == 'K') {
+      return 1024;
+    }
+    if (lastChar == 'm' || lastChar == 'M') {
+      return 1024 * 1024;
+    }
+    throw std::runtime_error("Invalid suffix for client_max_body_size: " +
+                             std::string(1, lastChar));
+  }
+  return 1;
 }
 
 void ConfigParser::validateSemicolon() { consumeToken(";"); }
