@@ -100,6 +100,8 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
     parseRoot(config);
   } else if (directive == "client_max_body_size") {
     parseClientMaxBodySize(config);
+  } else if (directive == "index") {
+    parseIndex(config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }
@@ -356,6 +358,20 @@ long ConfigParser::getMultiplier(const std::string &rawValue) const {
                              std::string(1, lastChar));
   }
   return 1;
+}
+
+void ConfigParser::parseIndex(ServerConfig &config) {
+  consumeToken("index");
+  validateHasValue("index");
+
+  validateNotDuplicate("index", !config.getIndexFiles().empty());
+
+  while (hasMoreTokens() && !isDelimiter(peekToken()[0])) {
+    const std::string &file = peekToken();
+    config.setIndexFile(file);
+    this->tokenPosition++;
+  }
+  validateSemicolon();
 }
 
 void ConfigParser::validateSemicolon() { consumeToken(";"); }

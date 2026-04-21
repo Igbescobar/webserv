@@ -19,6 +19,8 @@ int main() {
                   << std::endl;
       }
       std::cout << "  [root] " << servers[i].getRoot() << std::endl;
+      std::cout << "  [maxBodyClient]" << servers[i].getClientMaxBodySize()
+                << std::endl;
     }
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;

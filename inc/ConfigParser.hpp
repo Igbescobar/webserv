@@ -39,6 +39,7 @@ private:
   void parseServerName(ServerConfig &config);
   void parseRoot(ServerConfig &config);
   void parseClientMaxBodySize(ServerConfig &config);
+  void parseIndex(ServerConfig &config);
 
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
