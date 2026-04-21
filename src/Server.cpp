@@ -7,14 +7,6 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-// TODO:
-// cleanup
-// ctrl-c
-// error handling
-// non-blocking read/write
-// control never-ending request
-// control timeout request
-
 Server::Server() {
 	socket_create();
 	non_blocking(server_fd);
@@ -27,40 +19,9 @@ Server::Server() {
 Server::~Server() {
 }
 
-void Server::epoll_create() {
-	epoll_fd = ::epoll_create(1);
-	if (epoll_fd < 0)
-		throw std::runtime_error("epoll_create: " + std::string(strerror(errno)));
-}
-
-void Server::socket_create() {
-	server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (server_fd < 0)
-		throw std::runtime_error("socket: " + std::string(strerror(errno)));
-
-	int opt = 1;
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-		throw std::runtime_error("setcokopt: " + std::string(strerror(errno)));
-}
-
 void Server::non_blocking(int fd) {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
 		throw std::runtime_error("fcntl: " + std::string(strerror(errno)));
-}
-
-void Server::socket_bind() {
-	struct sockaddr_in addr;
-	memset((char *)&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	addr.sin_port = htons(PORT);
-	if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		throw std::runtime_error("bind: " + std::string(strerror(errno)));
-}
-
-void Server::socket_listen() {
-	if (listen(server_fd, MAX_CONNECTIONS) < 0)
-		throw std::runtime_error("listen: " + std::string(strerror(errno)));
 }
 
 void Server::run() {
@@ -71,33 +32,6 @@ void Server::run() {
 			throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
 		handle_events(num_events);
 	}
-}
-
-void Server::epoll_read(int fd) {
-	struct epoll_event ev;
-
-	std::memset(&ev, 0, sizeof(ev));
-	ev.events = EPOLLIN;
-	ev.data.fd = fd;
-
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev) < 0)
-		throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
-}
-
-void Server::epoll_remove(int fd) {
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) < 0)
-		throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
-}
-
-void Server::epoll_write(int fd) {
-	struct epoll_event ev;
-
-	std::memset(&ev, 0, sizeof(ev));
-	ev.events = EPOLLOUT;
-	ev.data.fd = fd;
-
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev) < 0)
-		throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
 }
 
 void Server::handle_events(int n) {

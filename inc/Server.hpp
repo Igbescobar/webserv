@@ -16,6 +16,15 @@
 #define BUF_SIZE 4096
 #define DELIMETER "\r\n\r\n"
 
+// TODO:
+// cleanup
+// ctrl-c
+// error handling
+// non-blocking read/write
+// control never-ending request
+// control timeout request
+// do not stop if max open files reached
+
 class Server {
 	private:
 		int server_fd;

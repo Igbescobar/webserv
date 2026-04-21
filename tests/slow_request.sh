@@ -2,7 +2,7 @@
 
 TARGET="localhost"
 PORT=8080
-TIME=100
+TIME=1
 
 send_request() {
 # Using a subshell to group the output for the pipe
