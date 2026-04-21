@@ -30,7 +30,8 @@ class Server {
 		int server_fd;
 		int epoll_fd;
 		struct epoll_event events[MAX_EVENTS];
-		std::map<int, std::string> map;
+		std::map<int, std::string> read_map;
+		std::map<int, std::string> write_map;
 
 		void socket_create();
 		void socket_bind();

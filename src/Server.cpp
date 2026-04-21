@@ -26,7 +26,7 @@ void Server::non_blocking(int fd) {
 
 void Server::run() {
 	while (true) {
-		//std::cout << "map.size: " << map.size() << std::endl;
+		//std::cout << "read_map.size: " << read_map.size() << std::endl;
 		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 		if (num_events < 0)
 			throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
@@ -56,7 +56,7 @@ void Server::handle_server() {
 		throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
 	non_blocking(new_socket);
-	map.erase(new_socket);
+	read_map.erase(new_socket);
 	epoll_read(new_socket);
 	return;
 }
@@ -75,37 +75,44 @@ void Server::client_read(int fd) {
 	bytes_read = read(fd, buffer, BUF_SIZE);
 	if (bytes_read <= 0) {
 		epoll_remove(fd);
-		map.erase(fd);
+		read_map.erase(fd);
 		close(fd);
 		return;
 	}
 
 	buffer[bytes_read] = '\0';
-	map[fd] += buffer;
+	read_map[fd] += buffer;
 
-	//std::cout << "\"" << map[fd] << "\"\n";
+	//std::cout << "\"" << read_map[fd] << "\"\n";
 
-	size_t pos = map[fd].find(DELIMETER);
+	size_t pos = read_map[fd].find(DELIMETER);
 	if (pos == std::string::npos)
 		return;
 
 	//std::cout << "done!\n";
 
-	map.erase(fd);
+	read_map.erase(fd);
 
 	epoll_write(fd);
 }
 
 void Server::client_write(int fd) {
-	write(fd, RESPONSE, sizeof(RESPONSE));
-	epoll_remove(fd);
-	close(fd);
-	// TODO: non-blocking write
-	//int bytes_written;
+	int bytes_written;
 
-	//bytes_written = write(fd, RESPONSE, sizeof(RESPONSE));
-	//if (bytes_written <= 0) {
-	//	epoll_remove(fd);
-	//	close(fd);
-	//}
+	if (write_map[fd].empty())
+		write_map[fd] = RESPONSE;
+
+	bytes_written = write(fd, write_map[fd].c_str(), write_map[fd].size());
+	if (bytes_written <= 0) {
+		epoll_remove(fd);
+		write_map.erase(fd);
+		close(fd);
+	}
+
+	write_map[fd].erase(0, bytes_written);
+	if (write_map[fd].empty()) {
+		epoll_remove(fd);
+		write_map.erase(fd);
+		close(fd);
+	}
 }

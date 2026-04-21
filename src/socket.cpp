@@ -14,6 +14,7 @@ void Server::socket_create() {
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
 		throw std::runtime_error("setcokopt: " + std::string(strerror(errno)));
 }
+
 void Server::socket_bind() {
 	struct sockaddr_in addr;
 	memset((char *)&addr, 0, sizeof(addr));
