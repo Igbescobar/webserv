@@ -14,13 +14,16 @@ public:
 
   const std::vector<std::string> &getListen() const;
   const std::vector<std::string> &getServerNames() const;
+  const std::string &getRoot() const;
 
   void addListen(const std::string &listen_directive);
   void addServerName(const std::string &serverName);
+  void addRoot(const std::string &root);
 
 private:
   std::vector<std::string> listen;
   std::vector<std::string> serverNames;
+  std::string root;
 };
 
 #endif

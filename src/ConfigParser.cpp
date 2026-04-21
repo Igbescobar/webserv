@@ -96,6 +96,8 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
     parseListen(config);
   } else if (directive == "server_name") {
     parseServerName(&config);
+  } else if (directive == "root") {
+    parseRoot(&config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }
@@ -256,6 +258,38 @@ bool ConfigParser::isDuplicateServerName(const ServerConfig &config,
       return true;
   }
   return false;
+}
+
+void ConfigParser::parseRoot(ServerConfig *config) {
+  consumeToken("root");
+
+  validateHasValue("root");
+  validateRootNotDuplicate(config);
+
+  config->addRoot(peekToken());
+  this->tokenPosition++;
+
+  validateOnlyOneValue("root");
+  validateSemicolon();
+}
+
+void ConfigParser::validateHasValue(const std::string &directive) const {
+  if (!hasMoreTokens() || isDelimiter(peekToken()[0])) {
+    throw std::runtime_error("Directive '" + directive + "' requires a value.");
+  }
+}
+
+void ConfigParser::validateOnlyOneValue(const std::string &directive) const {
+  if (hasMoreTokens() && !isDelimiter(peekToken()[0])) {
+    throw std::runtime_error("Directive '" + directive +
+                             "' requires exactly one value.");
+  }
+}
+
+void ConfigParser::validateRootNotDuplicate(const ServerConfig *config) const {
+  if (!config->getRoot().empty()) {
+    throw std::runtime_error("Duplicate 'root' directive found.");
+  }
 }
 
 void ConfigParser::validateSemicolon() { consumeToken(";"); }

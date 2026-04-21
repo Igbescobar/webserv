@@ -18,6 +18,7 @@ int main() {
         std::cout << "  [" << j << "] server_name: " << server_names[j]
                   << std::endl;
       }
+      std::cout << "  [root] " << servers[i].getRoot() << std::endl;
     }
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;

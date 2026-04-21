@@ -37,6 +37,7 @@ private:
   void parseServerDirective(ServerConfig &config);
   void parseListen(ServerConfig &config);
   void parseServerName(ServerConfig *config);
+  void parseRoot(ServerConfig *config);
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
   std::string extractPort(const std::string &raw) const;
@@ -52,7 +53,9 @@ private:
   bool containsValidChars(const std::string &name) const;
   bool isDuplicateServerName(const ServerConfig &config,
                              const std::string &name) const;
-
+  void validateHasValue(const std::string &directive) const;
+  void validateOnlyOneValue(const std::string &directive) const;
+  void validateRootNotDuplicate(const ServerConfig *config) const;
   void skipComment(const std::string &content, size_t &index);
   void pushCurrentToken(std::string &token);
   bool isDelimiter(char c) const;
