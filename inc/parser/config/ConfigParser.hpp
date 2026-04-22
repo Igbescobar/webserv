@@ -1,7 +1,7 @@
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
-#include "../inc/ServerConfig.hpp"
+#include "ServerConfig.hpp"
 #include <cctype>
 #include <cstdlib>
 #include <fstream>

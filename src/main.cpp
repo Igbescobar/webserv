@@ -1,4 +1,4 @@
-#include "../inc/ConfigParser.hpp"
+#include "../inc/parser/config/ConfigParser.hpp"
 
 void logServerConfig(const ServerConfig &config, int serverIndex);
 
@@ -37,9 +37,11 @@ int main(int argc, char **argv) {
 void logServerConfig(const ServerConfig &config, int serverIndex) {
   std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
 
-  const std::vector<std::string> &listens = config.getListen();
-  for (size_t j = 0; j < listens.size(); ++j) {
-    std::cout << "  Listen: " << listens[j] << std::endl;
+  const std::vector<std::string> &ips = config.getIPs();
+  const std::vector<int> &ports = config.getPorts();
+  for (size_t j = 0; j < ips.size(); ++j) {
+    std::cout << "  Listen: IP = " << ips[j] << ", Port = " << ports[j]
+              << std::endl;
   }
 
   const std::vector<std::string> &server_names = config.getServerNames();
