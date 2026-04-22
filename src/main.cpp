@@ -1,7 +1,6 @@
 #include "Server.hpp"
 
-int main()
-{
-	Server s;
-	s.run();
+int main() {
+  Server s;
+  s.run();
 }
