@@ -1,26 +1,23 @@
 NAME = webserv
 
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -g -std=c++98 -Iinc
+CXXFLAGS = -Wall -Wextra -Werror -g -std=c++98 -Iinc -Iinc/server
 
 SRC_DIR = src
-INC_DIR = inc
 OBJ_DIR = obj
 
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+SRCS = $(shell find $(SRC_DIR) -name "*.cpp")
 
-OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
 
 clean:
 	rm -rf $(OBJ_DIR)
