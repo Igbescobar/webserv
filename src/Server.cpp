@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "HttpRequest.hpp"
 #include <iostream>
 #include <cerrno>
 #include <cstring>
@@ -56,6 +57,7 @@ void Server::handle_server() {
 		throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
 	non_blocking(new_socket);
+	read_map.count(1)?std::cout<<"Existe\n": std::cout<<"No existe\n";
 	read_map.erase(new_socket);
 	epoll_read(new_socket);
 	return;
@@ -90,7 +92,10 @@ void Server::client_read(int fd) {
 		return;
 
 	std::cout << "done!\n";
-
+	std::string s(buffer);
+	//TODO: Request parsing starting here
+	HttpRequest request(s);
+	//request.parseRawData();
 	read_map.erase(fd);
 
 	epoll_write(fd);
