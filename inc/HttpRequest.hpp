@@ -30,8 +30,8 @@ public:
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;
-  std::string getHeader(const std::string &key) const;
-  std::map<std::string, std::string> getHeaders() const;
+  //std::string getHeader(const std::string &key) const;
+  //std::map<std::string, std::string> getHeaders() const;
   std::string getBody() const;
 };
 
