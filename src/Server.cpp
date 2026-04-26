@@ -96,7 +96,6 @@ void Server::client_read(int fd) {
 	//TODO: Request parsing starting here
 	std::cout<<"-----PARSING STARTING HERE-----"<<std::endl;
 	HttpRequest request(s);
-	//request.parseRawData();
 	read_map.erase(fd);
 
 	epoll_write(fd);

@@ -26,7 +26,8 @@ private:
 public:
   HttpRequest(const std::string &rawData);
   ~HttpRequest();
-
+  void	initializeFirstLineValues(std::string header);
+  void	parseHeaders(std::string header, size_t pos);
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;
