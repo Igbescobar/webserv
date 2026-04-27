@@ -26,15 +26,27 @@ private:
 public:
   HttpRequest(const std::string &rawData);
   ~HttpRequest();
-  void	initializeFirstLineValues(std::string header);
-  void	parseHeaders(std::string header, size_t pos);
-  void	parseHeaderLine(const std::string headerLine);
+  void	initializeFirstLineValues(std::string &header);
+  void	parseHeaders(const std::string &header, size_t pos);
+  void	parseHeaderLine(const std::string &headerLine);
+  void	checkRequestLine();
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;
   //std::string getHeader(const std::string &key) const;
   //std::map<std::string, std::string> getHeaders() const;
   std::string getBody() const;
+  class HttpRequestException: public std::exception
+  {
+	private:
+		std::string _msg;
+		int		_code;
+	public:
+		HttpRequestException(std::string msg, int code): _msg(msg), _code(code){}
+		~HttpRequestException() throw() {} 
+		const	char* what() const throw(){ return _msg.c_str();}
+		int code() const { return _code;}
+  };
 };
 
 #endif

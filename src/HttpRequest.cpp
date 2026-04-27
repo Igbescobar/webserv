@@ -15,38 +15,58 @@ HttpRequest::~HttpRequest()
 	//std::cout<<"Http Destructor called"<<std::endl;
 }
 
-std::string	extractString(std::string Data, std::string delimeter)
+void	checkFind(size_t parameter, std::string message, int code)
+{
+	if(parameter  ==  std::string::npos)
+		throw HttpRequest::HttpRequestException(message, code);
+}
+
+void	HttpRequest::checkRequestLine()
+{
+	if(method != "GET" && method != "POST" && method != "DELETE")
+		throw HttpRequest::HttpRequestException("Undefined method", 404);
+	if(version != "HTTP/1.1")
+		throw HttpRequest::HttpRequestException("HTML version not valid", 404);
+}
+
+std::string	extractString(const std::string &Data,const std::string &delimeter)
 {
 	size_t	stringEnd = Data.find(delimeter);
 	if(stringEnd == std::string::npos)
-		std::cout<<"Error, stringEnd not found"<<std::endl;
+		throw HttpRequest::HttpRequestException("Data  not correctly extracted", 400);
 
-	std::string result = Data.substr(0, stringEnd);
+	const std::string &result = Data.substr(0, stringEnd);
 
 	return result;
 }
 
-void	HttpRequest::initializeFirstLineValues(std::string header)
+void	HttpRequest::initializeFirstLineValues(std::string &header)
 {
 	size_t firstLineFirstSpace = header.find(" ");
-	size_t firstLineSecondSpace = header.find(" ", firstLineFirstSpace + 1);
 
+	checkFind(firstLineFirstSpace, "Bad formed request line", 400);
+	size_t firstLineSecondSpace = header.find(" ", firstLineFirstSpace + 1);
+	checkFind(firstLineSecondSpace, "Bad formed request line", 400);
 	this->method = header.substr(0, firstLineFirstSpace);
-	this->uri = header.substr(firstLineFirstSpace + 1, firstLineSecondSpace - firstLineFirstSpace);
+	this->uri = header.substr(firstLineFirstSpace + 1, firstLineSecondSpace - firstLineFirstSpace - 1);
 	this->version = header.substr(firstLineSecondSpace + 1);
+	checkRequestLine();
 }
 
 
-void	HttpRequest::parseHeaderLine(const std::string headerLine)
+void	HttpRequest::parseHeaderLine(const std::string &headerLine)
 {
 	size_t colonPos = headerLine.find(":");
+	if(colonPos == std::string::npos)
+		throw  HttpRequest::HttpRequestException("Header line bad formed", 400);
 	std::string key = headerLine.substr(0, colonPos);
 	std::string value = headerLine.substr(colonPos + 2);
 	this->headers[key] = value;
 }
-void	HttpRequest::parseHeaders(const std::string header, size_t pos)
+void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
 {
-
+	if(pos > header.length())
+		throw	HttpRequest::HttpRequestException("Bad formed headers", 404);
 	while(pos < header.length())
 	{
 		size_t lineEnd = header.find("\r\n", pos);
@@ -55,12 +75,6 @@ void	HttpRequest::parseHeaders(const std::string header, size_t pos)
 		parseHeaderLine(header.substr(pos, lineEnd - pos));
 		pos = lineEnd + 2;
 	}
-	std::map<std::string, std::string>::iterator it;
-
-	/*for(it = headers.begin(); it != headers.end(); ++it)
-	{
-		std::cout<<it->first<<" "<<it->second<<"\n";
-	}*/
 }
 void	HttpRequest::parseRawData(const std::string &rawData)
 {

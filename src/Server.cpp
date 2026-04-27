@@ -85,7 +85,7 @@ void Server::client_read(int fd) {
 	buffer[bytes_read] = '\0';
 	read_map[fd] += buffer;
 
-	std::cout << "\"" << read_map[fd] << "\"";
+	//std::cout << "\"" << read_map[fd] << "\"";
 
 	size_t pos = read_map[fd].find(DELIMETER);
 	if (pos == std::string::npos)
@@ -95,7 +95,14 @@ void Server::client_read(int fd) {
 	std::string s(buffer);
 	//TODO: Request parsing starting here
 	std::cout<<"-----PARSING STARTING HERE-----"<<std::endl;
-	HttpRequest request(s);
+	try
+	{
+		HttpRequest request(s);
+	}
+	catch(const HttpRequest::HttpRequestException &e)
+	{
+		std::cout<<e.what();
+	}
 	read_map.erase(fd);
 
 	epoll_write(fd);
