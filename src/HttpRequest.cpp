@@ -39,10 +39,9 @@ void	HttpRequest::initializeFirstLineValues(std::string header)
 
 void	HttpRequest::parseHeaderLine(const std::string headerLine)
 {
-	std::string line = header.substr(pos, lineEnd - pos);
-	size_t colonPos = line.find(":");
-	std::string key = line.substr(0, colonPos);
-	std::string value = line.substr(colonPos + 2, lineEnd - (colonPos + 2));
+	size_t colonPos = headerLine.find(":");
+	std::string key = headerLine.substr(0, colonPos);
+	std::string value = headerLine.substr(colonPos + 2);
 	this->headers[key] = value;
 }
 void	HttpRequest::parseHeaders(const std::string header, size_t pos)
@@ -56,6 +55,12 @@ void	HttpRequest::parseHeaders(const std::string header, size_t pos)
 		parseHeaderLine(header.substr(pos, lineEnd - pos));
 		pos = lineEnd + 2;
 	}
+	std::map<std::string, std::string>::iterator it;
+
+	/*for(it = headers.begin(); it != headers.end(); ++it)
+	{
+		std::cout<<it->first<<" "<<it->second<<"\n";
+	}*/
 }
 void	HttpRequest::parseRawData(const std::string &rawData)
 {

@@ -28,6 +28,7 @@ public:
   ~HttpRequest();
   void	initializeFirstLineValues(std::string header);
   void	parseHeaders(std::string header, size_t pos);
+  void	parseHeaderLine(const std::string headerLine);
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;
