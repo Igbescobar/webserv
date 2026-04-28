@@ -1,5 +1,5 @@
-#include "../../../inc/parser/config/ConfigParser.hpp"
-#include "../../../inc/parser/config/ServerConfig.hpp"
+#include "parser/config/ConfigParser.hpp"
+#include "parser/config/ServerConfig.hpp"
 
 void ConfigParser::parseRoot(ServerConfig &config) {
   consumeToken("root");

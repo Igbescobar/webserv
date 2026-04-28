@@ -1,10 +1,12 @@
-#include "../../../inc/parser/config/ServerConfig.hpp"
+#include "parser/config/ServerConfig.hpp"
 
 ServerConfig::ServerConfig() : clientMaxBodySize(-1) {}
 
-ServerConfig::~ServerConfig() {}
-
-ServerConfig::ServerConfig(const ServerConfig &other) { *this = other; }
+ServerConfig::ServerConfig(const ServerConfig &other)
+    : listen(other.listen), ips(other.ips), ports(other.ports),
+      serverNames(other.serverNames), root(other.root),
+      clientMaxBodySize(other.clientMaxBodySize), indexFiles(other.indexFiles),
+      errorPages(other.errorPages) {}
 
 ServerConfig &ServerConfig::operator=(const ServerConfig &other) {
   if (this != &other) {
@@ -19,6 +21,8 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &other) {
   }
   return *this;
 }
+
+ServerConfig::~ServerConfig() {}
 
 const std::vector<std::string> &ServerConfig::getListens() const {
   return this->listen;

@@ -1,5 +1,5 @@
-#ifndef SERVER_CONFIG_HPP
-#define SERVER_CONFIG_HPP
+#ifndef SERVERCONFIG_HPP
+#define SERVERCONFIG_HPP
 
 #include <map>
 #include <string>
@@ -8,9 +8,9 @@
 class ServerConfig {
 public:
   ServerConfig();
-  ~ServerConfig();
   ServerConfig(const ServerConfig &other);
   ServerConfig &operator=(const ServerConfig &other);
+  ~ServerConfig();
 
   const std::vector<std::string> &getListens() const;
   const std::vector<std::string> &getIPs() const;

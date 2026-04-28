@@ -1,4 +1,4 @@
-#include "../../../inc/parser/config/ConfigParser.hpp"
+#include "parser/config/ConfigParser.hpp"
 
 void ConfigParser::parseIndex(ServerConfig &config) {
   consumeToken("index");

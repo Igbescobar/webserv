@@ -1,9 +1,24 @@
-#include "../../../inc/parser/config/ConfigParser.hpp"
-#include "../../../inc/parser/config/ServerConfig.hpp"
+#include "parser/config/ConfigParser.hpp"
+#include "parser/config/ServerConfig.hpp"
 #include <cstdlib>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 
 ConfigParser::ConfigParser() : tokenPosition(0) {}
+
+ConfigParser::ConfigParser(const ConfigParser &other)
+    : tokens(other.tokens), tokenPosition(other.tokenPosition),
+      serverConfigs(other.serverConfigs) {}
+
+ConfigParser &ConfigParser::operator=(const ConfigParser &other) {
+  if (this != &other) {
+    tokens = other.tokens;
+    tokenPosition = other.tokenPosition;
+    serverConfigs = other.serverConfigs;
+  }
+  return *this;
+}
 
 ConfigParser::~ConfigParser() {}
 
@@ -58,27 +73,7 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
 }
 
 void ConfigParser::validateServerConfigs() const {
-  if (this->serverConfigs.empty()) {
-    throw std::runtime_error(
-        "Configuration file must contain at least one server block.");
-  }
-
-  for (size_t i = 0; i < this->serverConfigs.size(); ++i) {
-    const ServerConfig &config = this->serverConfigs[i];
-
-    if (config.getListens().empty()) {
-      std::stringstream errorMsg;
-      errorMsg << "Server " << i
-               << " is missing a required 'listen' directive.";
-      throw std::runtime_error(errorMsg.str());
-    }
-
-    if (config.getRoot().empty()) {
-      std::stringstream errorMsg;
-      errorMsg << "Server " << i << " is missing a required 'root' directive.";
-      throw std::runtime_error(errorMsg.str());
-    }
-
-    // check different servers with same ip and port
-  }
+  validateHasServerBlocks();
+  validateEachServerHasMandatoryDirectives();
+  validateNoDuplicateIpPortAcrossServers();
 }

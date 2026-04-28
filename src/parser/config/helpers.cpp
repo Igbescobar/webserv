@@ -1,4 +1,4 @@
-#include "../../../inc/parser/config/ConfigParser.hpp"
+#include "parser/config/ConfigParser.hpp"
 
 void ConfigParser::skipComment(const std::string &content, size_t &index) {
   while (index < content.length() && content[index] != '\n') {

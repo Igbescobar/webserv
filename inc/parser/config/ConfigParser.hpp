@@ -1,11 +1,12 @@
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
-#include "ServerConfig.hpp"
+#include "parser/config/ServerConfig.hpp"
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -14,6 +15,8 @@
 class ConfigParser {
 public:
   ConfigParser();
+  ConfigParser(const ConfigParser &other);
+  ConfigParser &operator=(const ConfigParser &other);
   ~ConfigParser();
 
   void parse(const std::string &configPath);
@@ -75,6 +78,9 @@ private:
   void pushCurrentToken(std::string &token);
   bool isDelimiter(char c) const;
   bool isWhitespace(char c) const;
+  void validateHasServerBlocks() const;
+  void validateEachServerHasMandatoryDirectives() const;
+  void validateNoDuplicateIpPortAcrossServers() const;
 };
 
 #endif

@@ -1,4 +1,4 @@
-#include "../../../inc/parser/config/ConfigParser.hpp"
+#include "parser/config/ConfigParser.hpp"
 
 void ConfigParser::tokenizeFile(const std::string &filename) {
   std::string rawContent = readFileContents(filename);
