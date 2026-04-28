@@ -7,6 +7,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <cstdlib>
 
 class ParseError : public std::runtime_error {
 public:
@@ -26,15 +27,16 @@ private:
 public:
   HttpRequest(const std::string &rawData);
   ~HttpRequest();
-  void	initializeFirstLineValues(std::string &header);
+  void	parseFirstLineValues(const std::string &header);
   void	parseHeaders(const std::string &header, size_t pos);
   void	parseHeaderLine(const std::string &headerLine);
+  void	parseBody(const std::string &rawData);
   void	checkRequestLine();
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;
-  //std::string getHeader(const std::string &key) const;
-  //std::map<std::string, std::string> getHeaders() const;
+  std::string getHeader(const std::string &key) const;
+  std::map<std::string, std::string> getHeaders() const;
   std::string getBody() const;
   class HttpRequestException: public std::exception
   {

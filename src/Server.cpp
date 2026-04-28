@@ -92,20 +92,31 @@ void Server::client_read(int fd) {
 		return;
 
 	std::cout << "done!\n";
-	std::string s(buffer);
+	std::string s(read_map[fd]);
 	//TODO: Request parsing starting here
 	std::cout<<"-----PARSING STARTING HERE-----"<<std::endl;
 	try
 	{
 		HttpRequest request(s);
+		epoll_write(fd);
 	}
 	catch(const HttpRequest::HttpRequestException &e)
 	{
-		std::cout<<e.what();
+		std::string response;
+		if (e.code() == 400)
+		response = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+		else if (e.code() == 405)
+		{
+			response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 22\r\n\r\nMethod Not Allowed\r\n\r\n";
+			std::cout<<"Entra aqui"<<std::endl;
+		}
+		else if (e.code() == 505)
+			response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 22\r\n\r\nMethod Not Allowed\r\n\r\n";
+		write(fd, response.c_str(), response.size());
+			close(fd);
+		//cleanup_client(fd);
 	}
 	read_map.erase(fd);
-
-	epoll_write(fd);
 }
 
 void Server::client_write(int fd) {
