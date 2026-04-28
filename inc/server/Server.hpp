@@ -18,12 +18,12 @@
 #define DELIMETER "\r\n\r\n"
 
 // TODO:
-// cleanup
-// ctrl-c
+// cleanup resources: fd, etc (do not leak fd)
+// ctrl-c safe exit
 // error handling
-// non-blocking read/write
 // control never-ending request
 // control timeout request
+// control request too large
 // do not stop if max open files reached
 
 class Server {
