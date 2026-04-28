@@ -1,9 +1,6 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include <cstdlib>
-#include <set>
-#include <sstream>
-#include <stdexcept>
 
 ConfigParser::ConfigParser() : tokenPosition(0) {}
 
