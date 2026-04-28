@@ -1,5 +1,7 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <sstream>
+#include <stdexcept>
 
 void ConfigParser::parseListen(ServerConfig &config) {
   consumeToken("listen");

@@ -1,6 +1,7 @@
 #ifndef SERVERCONFIG_HPP
 #define SERVERCONFIG_HPP
 
+#include "parser/config/LocationConfig.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -20,6 +21,7 @@ public:
   long getClientMaxBodySize() const;
   const std::vector<std::string> &getIndexFiles() const;
   const std::map<int, std::string> &getErrorPages() const;
+  const std::vector<LocationConfig> &getLocations() const;
 
   void addListen(const std::string &listen_directive);
   void addIP(const std::string &ip);
@@ -29,6 +31,7 @@ public:
   void setClientMaxBodySize(const long &size);
   void addIndexFile(const std::string &file);
   void addErrorPage(int code, const std::string &path);
+  void addLocation(const LocationConfig &location);
 
 private:
   std::vector<std::string> listen;
@@ -39,6 +42,7 @@ private:
   long clientMaxBodySize;
   std::vector<std::string> indexFiles;
   std::map<int, std::string> errorPages;
+  std::vector<LocationConfig> locations;
 };
 
 #endif

@@ -1,4 +1,7 @@
 #include "parser/config/ConfigParser.hpp"
+#include <set>
+#include <sstream>
+#include <stdexcept>
 
 void ConfigParser::validateHasValue(const std::string &directive) const {
   if (!hasMoreTokens() || isDelimiter(peekToken()[0])) {

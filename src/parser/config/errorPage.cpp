@@ -1,5 +1,6 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <stdexcept>
 
 void ConfigParser::parseErrorPage(ServerConfig &config) {
   consumeToken("error_page");

@@ -6,7 +6,7 @@ ServerConfig::ServerConfig(const ServerConfig &other)
     : listen(other.listen), ips(other.ips), ports(other.ports),
       serverNames(other.serverNames), root(other.root),
       clientMaxBodySize(other.clientMaxBodySize), indexFiles(other.indexFiles),
-      errorPages(other.errorPages) {}
+      errorPages(other.errorPages), locations(other.locations) {}
 
 ServerConfig &ServerConfig::operator=(const ServerConfig &other) {
   if (this != &other) {
@@ -18,6 +18,7 @@ ServerConfig &ServerConfig::operator=(const ServerConfig &other) {
     this->clientMaxBodySize = other.clientMaxBodySize;
     this->indexFiles = other.indexFiles;
     this->errorPages = other.errorPages;
+    this->locations = other.locations;
   }
   return *this;
 }
@@ -52,6 +53,10 @@ const std::map<int, std::string> &ServerConfig::getErrorPages() const {
   return this->errorPages;
 }
 
+const std::vector<LocationConfig> &ServerConfig::getLocations() const {
+  return locations;
+}
+
 void ServerConfig::addListen(const std::string &listen_directive) {
   this->listen.push_back(listen_directive);
 }
@@ -76,4 +81,8 @@ void ServerConfig::setClientMaxBodySize(const long &size) {
 
 void ServerConfig::addErrorPage(int code, const std::string &path) {
   this->errorPages[code] = path;
+}
+
+void ServerConfig::addLocation(const LocationConfig &location) {
+  locations.push_back(location);
 }

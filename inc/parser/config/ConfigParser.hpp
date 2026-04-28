@@ -1,14 +1,10 @@
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
+#include "parser/config/LocationConfig.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include <cctype>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -81,6 +77,17 @@ private:
   void validateHasServerBlocks() const;
   void validateEachServerHasMandatoryDirectives() const;
   void validateNoDuplicateIpPortAcrossServers() const;
+
+  void parseLocation(ServerConfig &config);
+  void parseLocationDirective(LocationConfig &location);
+
+  void parseLocationRoot(LocationConfig &location);
+  void parseLocationIndex(LocationConfig &location);
+  void parseLocationAutoIndex(LocationConfig &location);
+  void parseLocationAllowedMethods(LocationConfig &location);
+  void parseLocationReturn(LocationConfig &location);
+  void parseLocationUploadPath(LocationConfig &location);
+  void parseLocationClientMaxBodySize(LocationConfig &location);
 };
 
 #endif
