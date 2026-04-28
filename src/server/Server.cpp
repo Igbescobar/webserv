@@ -25,7 +25,6 @@ void Server::non_blocking(int fd) {
 
 void Server::run() {
   while (true) {
-    // std::cout << "read_map.size: " << read_map.size() << std::endl;
     int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
     if (num_events < 0)
       throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
@@ -82,13 +81,9 @@ void Server::client_read(int fd) {
   buffer[bytes_read] = '\0';
   read_map[fd] += buffer;
 
-  // std::cout << "\"" << read_map[fd] << "\"\n";
-
   size_t pos = read_map[fd].find(DELIMETER);
   if (pos == std::string::npos)
     return;
-
-  // std::cout << "done!\n";
 
   read_map.erase(fd);
 
