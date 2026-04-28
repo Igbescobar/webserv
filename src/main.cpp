@@ -1,4 +1,5 @@
 #include "parser/config/ConfigParser.hpp"
+#include "server/Server.hpp"
 
 void logServerConfig(const ServerConfig &config, int serverIndex);
 
@@ -26,6 +27,8 @@ int main(int argc, char **argv) {
       logServerConfig(servers[i], i);
     }
 
+    Server s(parser);
+    s.run();
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
