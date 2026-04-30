@@ -1,5 +1,6 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
 

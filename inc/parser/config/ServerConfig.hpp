@@ -3,8 +3,6 @@
 
 #include "parser/config/LocationConfig.hpp"
 #include <map>
-#include <string>
-#include <vector>
 
 class ServerConfig {
 public:

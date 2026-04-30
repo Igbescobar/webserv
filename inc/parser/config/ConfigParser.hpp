@@ -3,10 +3,6 @@
 
 #include "parser/config/LocationConfig.hpp"
 #include "parser/config/ServerConfig.hpp"
-#include <cctype>
-#include <cstdlib>
-#include <string>
-#include <vector>
 
 class ConfigParser {
 public:
