@@ -1,4 +1,5 @@
 #include "parser/config/LocationConfig.hpp"
+#include <string>
 
 LocationConfig::LocationConfig()
     : matchType(PREFIX), autoindex(false), clientMaxBodySize(-1) {}
@@ -7,7 +8,8 @@ LocationConfig::LocationConfig(const LocationConfig &other)
     : pattern(other.pattern), matchType(other.matchType), root(other.root),
       index(other.index), autoindex(other.autoindex),
       allowedMethods(other.allowedMethods), returnTarget(other.returnTarget),
-      uploadPath(other.uploadPath) {}
+      uploadPath(other.uploadPath), cgiPassExtensions(other.cgiPassExtensions) {
+}
 
 LocationConfig &LocationConfig::operator=(const LocationConfig &other) {
   if (this != &other) {
@@ -19,6 +21,7 @@ LocationConfig &LocationConfig::operator=(const LocationConfig &other) {
     allowedMethods = other.allowedMethods;
     returnTarget = other.returnTarget;
     uploadPath = other.uploadPath;
+    cgiPassExtensions = other.cgiPassExtensions;
   }
   return *this;
 }
@@ -55,6 +58,10 @@ void LocationConfig::setClientMaxBodySize(const long &size) {
   this->clientMaxBodySize = size;
 }
 
+void LocationConfig::addCgiPassExtensions(const std::string &extension) {
+  this->cgiPassExtensions.push_back(extension);
+}
+
 const std::string &LocationConfig::getPattern() const { return pattern; }
 
 LocationConfig::MatchType LocationConfig::getMatchType() const {
@@ -81,4 +88,8 @@ const std::string &LocationConfig::getUploadPath() const { return uploadPath; }
 
 long LocationConfig::getClientMaxBodySize() const {
   return this->clientMaxBodySize;
+}
+
+const std::vector<std::string> &LocationConfig::getCgiPassExtensions() const {
+  return this->cgiPassExtensions;
 }

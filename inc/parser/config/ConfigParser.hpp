@@ -41,6 +41,7 @@ private:
   void parseClientMaxBodySize(ServerConfig &config);
   void parseIndex(ServerConfig &config);
   void parseErrorPage(ServerConfig &config);
+  void parseLocationCgiPass(LocationConfig &location);
 
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
@@ -77,6 +78,7 @@ private:
   void validateHasServerBlocks() const;
   void validateEachServerHasMandatoryDirectives() const;
   void validateNoDuplicateIpPortAcrossServers() const;
+  void validateCgiPassExtension(const std::string &ext);
 
   void parseLocation(ServerConfig &config);
   void parseLocationDirective(LocationConfig &location);

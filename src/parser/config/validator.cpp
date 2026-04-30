@@ -76,3 +76,10 @@ void ConfigParser::validateNoDuplicateIpPortAcrossServers() const {
     }
   }
 }
+
+void ConfigParser::validateCgiPassExtension(const std::string &ext) {
+  if (ext.size() < 2 || ext[0] != '.') {
+    throw std::runtime_error("Invalid cgi_pass value: '" + ext +
+                             "' (expected extension like '.php')");
+  }
+}

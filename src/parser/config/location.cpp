@@ -41,6 +41,8 @@ void ConfigParser::parseLocationDirective(LocationConfig &location) {
     parseLocationUploadPath(location);
   } else if (directive == "client_max_body_size") {
     parseLocationClientMaxBodySize(location);
+  } else if (directive == "cgi_pass") {
+    parseLocationCgiPass(location);
   } else {
     throw std::runtime_error("Invalid location directive: " + directive);
   }

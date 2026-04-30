@@ -85,3 +85,21 @@ void ConfigParser::parseLocationClientMaxBodySize(LocationConfig &location) {
   validateOnlyOneValue("client_max_body_size");
   validateSemicolon();
 }
+
+void ConfigParser::parseLocationCgiPass(LocationConfig &location) {
+  consumeToken("cgi_pass");
+  validateHasValue("cgi_pass");
+  validateNotDuplicate("cgi_pass", !location.getCgiPassExtensions().empty());
+
+  validateNotDuplicate("cgi_pass", !location.getCgiPassExtensions().empty());
+
+  // Accept multiple extensions until ';'
+  while (hasMoreTokens() && peekToken() != ";") {
+    const std::string ext = peekToken();
+    tokenPosition++;
+    validateCgiPassExtension(ext);
+    location.addCgiPassExtensions(ext);
+  }
+
+  validateSemicolon();
+}

@@ -106,5 +106,13 @@ void logServerConfig(const ServerConfig &config, int serverIndex) {
 
     if (!loc.getUploadPath().empty())
       std::cout << "    Upload Path: " << loc.getUploadPath() << std::endl;
+
+    const std::vector<std::string> &cgiExts = loc.getCgiPassExtensions();
+    if (!cgiExts.empty()) {
+      std::cout << "    CGI Pass:";
+      for (size_t k = 0; k < cgiExts.size(); ++k)
+        std::cout << " " << cgiExts[k];
+      std::cout << std::endl;
+    }
   }
 }
