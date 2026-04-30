@@ -85,7 +85,7 @@ void Server::client_read(int fd) {
 	buffer[bytes_read] = '\0';
 	read_map[fd] += buffer;
 
-	//std::cout << "\"" << read_map[fd] << "\"";
+	std::cout << "\"" << read_map[fd] << "\"";
 
 	size_t pos = read_map[fd].find(DELIMETER);
 	if (pos == std::string::npos)
@@ -104,14 +104,14 @@ void Server::client_read(int fd) {
 	{
 		std::string response;
 		if (e.code() == 400)
-		response = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+		response = e.msg();
 		else if (e.code() == 405)
 		{
-			response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 22\r\n\r\nMethod Not Allowed\r\n\r\n";
+			response = e.msg();
 			std::cout<<"Entra aqui"<<std::endl;
 		}
 		else if (e.code() == 505)
-			response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 22\r\n\r\nMethod Not Allowed\r\n\r\n";
+			response = e.msg();
 		write(fd, response.c_str(), response.size());
 			close(fd);
 		//cleanup_client(fd);

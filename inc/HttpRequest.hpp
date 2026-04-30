@@ -48,6 +48,7 @@ public:
 		~HttpRequestException() throw() {} 
 		const	char* what() const throw(){ return _msg.c_str();}
 		int code() const { return _code;}
+		std::string msg() const { return _msg;}
   };
 };
 
