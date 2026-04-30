@@ -33,7 +33,7 @@ const std::string	extractString(const std::string &Data,const std::string &delim
 {
 	size_t	stringEnd = Data.find(delimeter);
 	if(stringEnd == std::string::npos)
-		throw HttpRequest::HttpRequestException("Data  not correctly extracted", 400);
+		throw HttpRequest::HttpRequestException("Data not correctly extracted", 400);
 	return Data.substr(0, stringEnd);
 }
 
@@ -56,7 +56,8 @@ void	HttpRequest::parseHeaderLine(const std::string &headerLine)
 	if(colonPos == std::string::npos)
 		throw  HttpRequest::HttpRequestException("Header line bad formed", 400);
 	std::string key = headerLine.substr(0, colonPos);
-	std::string value = headerLine.substr(colonPos + 2);
+	size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
+	std::string value = headerLine.substr(valueStart);
 	this->headers[key] = value;
 }
 void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
@@ -77,12 +78,21 @@ void HttpRequest::parseBody(const std::string &rawData)
 {
 	size_t bodyStart = rawData.find("\r\n\r\n");
 	bodyStart += 4;
-	if (headers.count("Content-Length"))
+	/*if (headers.count("Content-Length"))
 	{
-		size_t length = std::atoi(headers["Content-Length"].c_str());
-		this->body = rawData.substr(bodyStart, length);
-	}
+	}*/
+	size_t length = std::atoi(headers["Content-Length"].c_str());
+	this->body = rawData.substr(bodyStart, length);
+	std::cout<<this->body<<"\n";
 }
+
+/*void	HttpRequest::validateBody()
+{
+	if(this->method == "POST")
+	{
+		
+	}
+}*/
 
 void	HttpRequest::parseRawData(const std::string &rawData)
 {

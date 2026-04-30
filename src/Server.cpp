@@ -85,7 +85,7 @@ void Server::client_read(int fd) {
 	buffer[bytes_read] = '\0';
 	read_map[fd] += buffer;
 
-	std::cout << "\"" << read_map[fd] << "\"";
+	//std::cout << "\"" << read_map[fd] << "\"";
 
 	size_t pos = read_map[fd].find(DELIMETER);
 	if (pos == std::string::npos)
