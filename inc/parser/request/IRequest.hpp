@@ -5,7 +5,7 @@
 #include <string>
 
 class IRequest {
-
+public:
   virtual ~IRequest() {}
 
   virtual std::string getMethod() const = 0;

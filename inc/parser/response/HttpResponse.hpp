@@ -3,7 +3,6 @@
 
 #include "IResponse.hpp"
 #include <map>
-#include <sstream>
 #include <string>
 
 class HttpResponse : public IResponse {
