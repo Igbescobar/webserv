@@ -23,7 +23,7 @@ void	checkFind(size_t parameter, std::string message, int code)
 
 void	HttpRequest::checkRequestLine()
 {
-	if(method != "GET" && method != "POST" && method != "DELETE")
+	if(method != "GET" && method != "POST" && method != "DELETE" && method != "HEAD")
 		throw HttpRequest::HttpRequestException("Undefined method", 405);
 	if(version != "HTTP/1.1")
 		throw HttpRequest::HttpRequestException("HTML version not valid", 505);
@@ -81,8 +81,8 @@ void HttpRequest::parseBody(const std::string &rawData)
 	/*if (headers.count("Content-Length"))
 	{
 	}*/
-	size_t length = std::atoi(headers["Content-Length"].c_str());
-	this->body = rawData.substr(bodyStart, length);
+	//size_t length = std::atoi(headers["Content-Length"].c_str());
+	this->body = rawData.substr(bodyStart);
 	std::cout<<this->body<<"\n";
 }
 
