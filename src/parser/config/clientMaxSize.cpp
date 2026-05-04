@@ -1,5 +1,7 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <cstdlib>
+#include <stdexcept>
 
 void ConfigParser::parseClientMaxBodySize(ServerConfig &config) {
   consumeToken("client_max_body_size");
