@@ -2,7 +2,7 @@ webserv
 *.o
 *.swp
 .vscode/
-.clangd
+.clang-format
 .DS_Store
 obj/
 compile_commands.json
