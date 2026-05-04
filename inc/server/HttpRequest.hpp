@@ -32,6 +32,7 @@ public:
   void	parseHeaderLine(const std::string &headerLine);
   void	parseBody(const std::string &rawData);
   void	checkRequestLine();
+  void	checkRequestHeaders();
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;

@@ -17,7 +17,7 @@ HttpRequest::~HttpRequest()
 
 void	checkFind(size_t parameter, std::string message, int code)
 {
-	if(parameter  ==  std::string::npos)
+	if(parameter == std::string::npos)
 		throw HttpRequest::HttpRequestException(message, code);
 }
 
@@ -27,6 +27,16 @@ void	HttpRequest::checkRequestLine()
 		throw HttpRequest::HttpRequestException("Undefined method", 405);
 	if(version != "HTTP/1.1")
 		throw HttpRequest::HttpRequestException("HTML version not valid", 505);
+}
+
+void	HttpRequest::checkRequestHeaders()
+{	
+	if (getHeader("host").empty())
+		throw HttpRequestException("Host header missing", 400);
+	const std::string &cl = getHeader("content-length");
+	for (size_t i = 0; i < cl.size(); i++)
+		if (!isdigit(cl[i]))
+			throw HttpRequestException("Invalid Content-Length", 400);
 }
 
 const std::string	extractString(const std::string &Data,const std::string &delimeter)
@@ -53,13 +63,18 @@ void	HttpRequest::parseFirstLineValues(const std::string &requestLine)
 void	HttpRequest::parseHeaderLine(const std::string &headerLine)
 {
 	size_t colonPos = headerLine.find(":");
-	if(colonPos == std::string::npos)
-		throw  HttpRequest::HttpRequestException("Header line bad formed", 400);
+	checkFind(colonPos, "Header line bad formed", 400);
 	std::string key = headerLine.substr(0, colonPos);
+	if(key.empty() || key.find(' ') != std::string::npos || key.find('\t') != std::string::npos)
+		throw HttpRequest::HttpRequestException("Header line bad formed (spaces)", 400);
+	for(size_t i = 0; i < key.size(); i++)
+		key[i] = tolower(key[i]);
 	size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
 	std::string value = headerLine.substr(valueStart);
 	this->headers[key] = value;
+	checkRequestHeaders();
 }
+
 void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
 {
 	if(pos > header.length())
@@ -78,21 +93,8 @@ void HttpRequest::parseBody(const std::string &rawData)
 {
 	size_t bodyStart = rawData.find("\r\n\r\n");
 	bodyStart += 4;
-	/*if (headers.count("Content-Length"))
-	{
-	}*/
-	//size_t length = std::atoi(headers["Content-Length"].c_str());
 	this->body = rawData.substr(bodyStart);
-	std::cout<<this->body<<"\n";
 }
-
-/*void	HttpRequest::validateBody()
-{
-	if(this->method == "POST")
-	{
-		
-	}
-}*/
 
 void	HttpRequest::parseRawData(const std::string &rawData)
 {
@@ -125,11 +127,13 @@ std::string	HttpRequest::getBody() const
 	return	this->body;
 }
 
- std::string	HttpRequest::getHeader(const std::string &key) const
+std::string	HttpRequest::getHeader(const std::string &key) const
 {
 	std::map<std::string, std::string>::const_iterator it = headers.find(key);
 	if (it == headers.end())
+	{
 		return "";
+	}
 	return it->second;
 }
 
@@ -137,4 +141,3 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return this->headers;
 }
-

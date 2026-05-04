@@ -98,23 +98,26 @@ void Server::client_read(int fd) {
 	try
 	{
 		HttpRequest request(s);
-		epoll_write(fd);
+		std::cout<<"Correct request"<<"\n";
 	}
 	catch(const HttpRequest::HttpRequestException &e)
 	{
 		std::string response;
 		if (e.code() == 400)
-		response = e.msg();
+		{
+			response = e.msg();
+			std::cout<<e.msg()<<"\n";
+		}
 		else if (e.code() == 405)
 		{
 			response = e.msg();
-			std::cout<<"Entra aqui"<<std::endl;
+			std::cout<<e.msg()<<std::endl;
 		}
 		else if (e.code() == 505)
+		{
 			response = e.msg();
-		write(fd, response.c_str(), response.size());
-			close(fd);
-		//cleanup_client(fd);
+			std::cout<<e.msg()<<"\n";
+		}
 	}
 	read_map.erase(fd);
 }
