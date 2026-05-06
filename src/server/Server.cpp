@@ -1,5 +1,5 @@
-#include "Server.hpp"
-#include "HttpRequest.hpp"
+#include "server/Server.hpp"
+#include "server/HttpRequest.hpp"
 #include <iostream>
 #include <cerrno>
 #include <cstring>

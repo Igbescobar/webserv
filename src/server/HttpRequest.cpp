@@ -1,5 +1,5 @@
 #include <iostream>
-#include "HttpRequest.hpp"
+#include "server/HttpRequest.hpp"
 
 //HttpRequest::HttpRequest(): method(method), uri(uri), version(version), headers(headers), body(body)
 //{}
