@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parser/config/ConfigParser.hpp"
+#include "server/HttpRequest.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
@@ -31,7 +32,7 @@ private:
   std::vector<int> servers;
   int epoll_fd;
   struct epoll_event events[MAX_EVENTS];
-  std::map<int, std::string> read_map;
+  std::map<int, HttpRequest> requestMap;
   std::map<int, std::string> write_map;
   ConfigParser globalConfig;
 

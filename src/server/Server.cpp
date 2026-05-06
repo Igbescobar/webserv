@@ -78,7 +78,8 @@ void Server::handle_server(int fd) {
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
   non_blocking(new_socket);
-  read_map.erase(new_socket);
+  requestMap.erase(new_socket);
+  requestMap[new_socket];
   epoll_read(new_socket);
   return;
 }
@@ -97,19 +98,18 @@ void Server::client_read(int fd) {
   bytes_read = read(fd, buffer, BUF_SIZE);
   if (bytes_read <= 0) {
     epoll_remove(fd);
-    read_map.erase(fd);
+    requestMap.erase(fd);
     close(fd);
     return;
   }
 
   buffer[bytes_read] = '\0';
-  read_map[fd] += buffer;
+  requestMap[fd].append(buffer);
 
-  size_t pos = read_map[fd].find(DELIMETER);
-  if (pos == std::string::npos)
+  if (!requestMap[fd].isCompleted())
     return;
 
-  read_map.erase(fd);
+  requestMap.erase(fd);
 
   epoll_write(fd);
 }

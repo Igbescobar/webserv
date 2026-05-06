@@ -2,13 +2,10 @@
 
 `#pragma once` allowed?
 
-# multiple-servers branch
-
-Make sure the code is clean
-
-pull request
-
 # new branch
+
+Distinguish `ServerConfig` when `accept()`,
+then distinguish `HttpRequest` when `epoll_wait()`
 
 Create a request object with the `ServerConfig` as argument
 
