@@ -91,7 +91,9 @@ void Server::handle_server(int fd) {
 
 void Server::handle_client(int fd, uint32_t events) {
 	if (events & EPOLLIN)
-		client_read(fd);
+{
+	client_read(fd);
+}
 	else if (events & EPOLLOUT)
 		client_write(fd);
 }

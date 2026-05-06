@@ -104,6 +104,7 @@ void	HttpRequest::parseRawData(const std::string &rawData)
 	size_t	firstLine = header.find("\r\n");
 	checkFind(firstLine, "Bad formed header", 400);
 	size_t header_start = firstLine + 2;
+	std::cout<<header_start<<"\n";
 	parseHeaders(header, header_start);
 	parseBody(rawData);
 }
