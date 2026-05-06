@@ -1,137 +1,121 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: igngonza <igngonza@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/04/07 11:25:32 by igngonza          #+#    #+#             */
-/*   Updated: 2026/04/15 16:06:51 by fdurban-         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
+#include "parser/config/ConfigParser.hpp"
+#include "server/Server.hpp"
 #include <iostream>
-#include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <cstring>
-#include <fcntl.h>
-#include <vector>
-#include <poll.h>
-#include <sys/epoll.h>
 
-#define MAX_EVENTS 64
+void logServerConfig(const ServerConfig &config, int serverIndex);
+
 int main(int argc, char **argv) {
   if (argc > 2) {
-    std::cerr << "Usage: " << argv[0] << " [configuration_file]" << std::endl;
+    std::cerr
+        << "Error: Too many arguments. Usage: ./webserv [config_file_path]"
+        << std::endl;
     return 1;
   }
 
-  const char *config_path = (argc == 2) ? argv[1] : "config/default.conf";
+  std::string configPath = (argc == 2) ? argv[1] : "config/default.conf";
+  std::cout << "--- Using configuration file: " << configPath << " ---\n";
 
   try {
-    // 1. Parse Configuration
-    // Config config(config_path);
+    ConfigParser parser;
+    parser.parse(configPath);
+    parser.validateServerConfigs();
 
-    // 2. Setup Server
-    // Server server(config);
-	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(server_fd == -1)
-	{
-		std::cout<<"Error creating the socket"<<std::endl;
-		return 1;
-	}
-	std::cout<<"server_fd :"<<server_fd<<std::endl;
-	int opt = 1;
-	if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-	{
-		std::cout<<"Error in setsockot"<<std::endl;
-		return 1;
-	}
-	struct sockaddr_in addr;
-	addr.sin_family =  AF_INET;
-	addr.sin_port = htons(8080);
-	addr.sin_addr.s_addr = inet_addr("10.13.9.4");
-	if(bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
-	{
-		std::cout<<"Error in bind, port might be already in use"<<std::endl;
-		return 1;
-	}
-	std::cout << "Bind OK en puerto 8080\n";
-	if(listen(server_fd, 128) == -1)
-	{
-		std::cout<<"Error server listening"<<std::endl;
-		return -1;
-	}
-	int epoll_fd = epoll_create1(0);
-	if (epoll_fd == -1) {
-		std::cerr << "Error en epoll_create1\n";
-		return 1;
-	}
-	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = server_fd;
-	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
+    const std::vector<ServerConfig> &servers = parser.getServerConfigs();
+    std::cout << "--- Found " << servers.size()
+              << " server configurations ---\n";
 
-	struct epoll_event events[MAX_EVENTS];
+    for (size_t i = 0; i < servers.size(); ++i) {
+      logServerConfig(servers[i], i);
+    }
 
-	while (true) {
-		std::cout << "Esperando actividad...\n";
-
-		int ready = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		if (ready == -1) {
-			std::cerr << "Error en epoll_wait\n";
-		break;
-        	}
-
-		std::cout << ready << " fd(s) listos\n";
-
-		for (int i = 0; i < ready; i++) {
-			int fd = events[i].data.fd;
-
-			if (fd == server_fd) {
-				int client_fd = accept(server_fd, NULL, NULL);
-				std::cout << "Cliente conectado: fd=" << client_fd << "\n";
-
-				struct epoll_event client_ev;
-				client_ev.events = EPOLLIN;
-				client_ev.data.fd = client_fd;
-				epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_ev);
-			}
-			else {
-				char buffer[4096];
-				std::memset(buffer, 0, sizeof(buffer));
-				ssize_t bytes = recv(fd, buffer, sizeof(buffer) - 1, 0);
-				if (bytes > 0) {
-					std::cout << "REQUEST fd=" << fd << ":\n" << buffer << "\n";
-				const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHola Mundo!\n";
-				send(fd, response, strlen(response), 0);
-				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-				close(fd);
-			}
-			else if (bytes == 0) {
-				std::cout << "Cliente fd=" << fd << " desconectado\n";
-				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-				close(fd);
-			}
-			else {
-				std::cerr << "Error en recv fd=" << fd << "\n";
-				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-				close(fd);
-			}
-		}
-	}
-}
-	close(epoll_fd);
-	close(server_fd);
-	return 0;
-	std::cout << "Server starting with config: " << config_path << std::endl;
+    Server s(parser);
+    s.run();
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
 
   return 0;
+}
+
+void logServerConfig(const ServerConfig &config, int serverIndex) {
+  std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
+
+  const std::vector<std::string> &ips = config.getIPs();
+  const std::vector<int> &ports = config.getPorts();
+  for (size_t j = 0; j < ips.size(); ++j) {
+    std::cout << "  Listen: IP = " << ips[j] << ", Port = " << ports[j]
+              << std::endl;
+  }
+
+  const std::vector<std::string> &server_names = config.getServerNames();
+  for (size_t j = 0; j < server_names.size(); ++j) {
+    std::cout << "  Server Name: " << server_names[j] << std::endl;
+  }
+
+  std::cout << "  Root: " << config.getRoot() << std::endl;
+
+  std::cout << "  Client Max Body Size: " << config.getClientMaxBodySize()
+            << " bytes" << std::endl;
+
+  const std::vector<std::string> &index_files = config.getIndexFiles();
+  for (size_t j = 0; j < index_files.size(); ++j) {
+    std::cout << "  Index: " << index_files[j] << std::endl;
+  }
+
+  const std::map<int, std::string> &error_pages = config.getErrorPages();
+  for (std::map<int, std::string>::const_iterator it = error_pages.begin();
+       it != error_pages.end(); ++it) {
+    std::cout << "  Error Page: " << it->first << " -> " << it->second
+              << std::endl;
+  }
+
+  // Print parsed locations
+  const std::vector<LocationConfig> &locations = config.getLocations();
+  std::cout << "  Locations: " << locations.size() << std::endl;
+
+  for (size_t i = 0; i < locations.size(); ++i) {
+    const LocationConfig &loc = locations[i];
+    std::cout << "    --- Location " << i << " ---" << std::endl;
+    std::cout << "    Pattern: " << loc.getPattern() << std::endl;
+
+    std::cout << "    MatchType: ";
+    if (loc.getMatchType() == LocationConfig::PREFIX)
+      std::cout << "PREFIX";
+    else if (loc.getMatchType() == LocationConfig::EXACT)
+      std::cout << "EXACT";
+    else if (loc.getMatchType() == LocationConfig::REGEX)
+      std::cout << "REGEX";
+    std::cout << std::endl;
+
+    if (!loc.getRoot().empty())
+      std::cout << "    Root: " << loc.getRoot() << std::endl;
+
+    const std::vector<std::string> &locIndexes = loc.getIndexes();
+    for (size_t j = 0; j < locIndexes.size(); ++j) {
+      std::cout << "    Index: " << locIndexes[j] << std::endl;
+    }
+
+    std::cout << "    AutoIndex: " << (loc.getAutoIndex() ? "on" : "off")
+              << std::endl;
+
+    const std::vector<std::string> &methods = loc.getAllowedMethods();
+    for (size_t j = 0; j < methods.size(); ++j) {
+      std::cout << "    Allowed Method: " << methods[j] << std::endl;
+    }
+
+    if (!loc.getReturnTarget().empty())
+      std::cout << "    Return: " << loc.getReturnTarget() << std::endl;
+
+    if (!loc.getUploadPath().empty())
+      std::cout << "    Upload Path: " << loc.getUploadPath() << std::endl;
+
+    const std::vector<std::string> &cgiExts = loc.getCgiPassExtensions();
+    if (!cgiExts.empty()) {
+      std::cout << "    CGI Pass:";
+      for (size_t k = 0; k < cgiExts.size(); ++k)
+        std::cout << " " << cgiExts[k];
+      std::cout << std::endl;
+    }
+  }
 }

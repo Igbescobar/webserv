@@ -1,0 +1,9 @@
+webserv
+*.o
+*.swp
+.vscode/
+.clangd
+.DS_Store
+obj/
+compile_commands.json
+.cache/
