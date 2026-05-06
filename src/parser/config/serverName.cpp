@@ -1,5 +1,6 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <stdexcept>
 
 void ConfigParser::parseServerName(ServerConfig &config) {
   consumeToken("server_name");

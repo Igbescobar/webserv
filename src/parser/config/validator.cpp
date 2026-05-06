@@ -1,4 +1,7 @@
 #include "parser/config/ConfigParser.hpp"
+#include <set>
+#include <sstream>
+#include <stdexcept>
 
 void ConfigParser::validateHasValue(const std::string &directive) const {
   if (!hasMoreTokens() || isDelimiter(peekToken()[0])) {
@@ -71,5 +74,12 @@ void ConfigParser::validateNoDuplicateIpPortAcrossServers() const {
       }
       used.insert(endpoint);
     }
+  }
+}
+
+void ConfigParser::validateCgiPassExtension(const std::string &ext) {
+  if (ext.size() < 2 || ext[0] != '.') {
+    throw std::runtime_error("Invalid cgi_pass value: '" + ext +
+                             "' (expected extension like '.php')");
   }
 }

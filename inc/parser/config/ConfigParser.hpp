@@ -1,16 +1,8 @@
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
+#include "parser/config/LocationConfig.hpp"
 #include "parser/config/ServerConfig.hpp"
-#include <cctype>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
 
 class ConfigParser {
 public:
@@ -45,6 +37,7 @@ private:
   void parseClientMaxBodySize(ServerConfig &config);
   void parseIndex(ServerConfig &config);
   void parseErrorPage(ServerConfig &config);
+  void parseLocationCgiPass(LocationConfig &location);
 
   std::string normalizeListen(const std::string &raw);
   std::string extractHost(const std::string &raw) const;
@@ -81,6 +74,18 @@ private:
   void validateHasServerBlocks() const;
   void validateEachServerHasMandatoryDirectives() const;
   void validateNoDuplicateIpPortAcrossServers() const;
+  void validateCgiPassExtension(const std::string &ext);
+
+  void parseLocation(ServerConfig &config);
+  void parseLocationDirective(LocationConfig &location);
+
+  void parseLocationRoot(LocationConfig &location);
+  void parseLocationIndex(LocationConfig &location);
+  void parseLocationAutoIndex(LocationConfig &location);
+  void parseLocationAllowedMethods(LocationConfig &location);
+  void parseLocationReturn(LocationConfig &location);
+  void parseLocationUploadPath(LocationConfig &location);
+  void parseLocationClientMaxBodySize(LocationConfig &location);
 };
 
 #endif
