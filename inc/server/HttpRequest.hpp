@@ -1,14 +1,17 @@
 #pragma once
 
+#include "parser/config/ServerConfig.hpp"
 #include <string>
 
 class HttpRequest {
-  private:
-    std::string buf;
-  public:
-    HttpRequest();
+private:
+  ServerConfig &serverConfig;
+  std::string buf;
 
-    void append(std::string chunk);
+public:
+  HttpRequest(ServerConfig &serverConfig);
 
-    bool isCompleted();
+  void append(std::string chunk);
+
+  bool isCompleted();
 };

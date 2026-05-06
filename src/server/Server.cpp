@@ -1,6 +1,8 @@
 #include "server/Server.hpp"
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include "server/HttpRequest.hpp"
+#include "server/HttpResponse.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -106,8 +108,12 @@ void Server::client_read(int fd) {
   buffer[bytes_read] = '\0';
   requestMap[fd].append(buffer);
 
+  // TODO: request could be imcomplete, complete or error
   if (!requestMap[fd].isCompleted())
     return;
+
+  // TODO: pass the request to the response
+  // HttpResponse response(serverConfig, requestMap[fd].getRequest());
 
   requestMap.erase(fd);
 
