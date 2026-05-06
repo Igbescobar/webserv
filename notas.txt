@@ -1,0 +1,7 @@
+tengo que apañarme para que el handle_server y el handle_client sepan de que
+server config estamos hablando
+
+yo ahora mismo tengo un string que voy acumulando con lo que me va llegando,
+pero creo que lo que debería ser es que yo cree un objeto request o lo que sea,
+y lo que vaya leyendo se lo vaya pasando al objeto, y sea el objeto el encargado
+de decirme si la request está incompleta, completa, o si hay error.
