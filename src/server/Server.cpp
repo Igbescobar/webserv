@@ -10,21 +10,31 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Server::Server(const ConfigParser &config) : conf(config) {
-  const ServerConfig *sc;
+Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
   epoll_create();
+  startAllServers();
+}
 
-  for (size_t i = 0; i < conf.getServerConfigs().size(); i++) {
-    sc = &conf.getServerConfigs()[i];
-    for (size_t j = 0; j < sc->getIPs().size(); j++) {
-      servers.push_back(socket_create());
-      non_blocking(servers[servers.size() - 1]);
-      socket_bind(servers[servers.size() - 1], sc->getIPs()[j],
-                  sc->getPorts()[j]);
-      socket_listen(servers[servers.size() - 1]);
-      epoll_read(servers[servers.size() - 1]);
+void Server::startAllServers() {
+  const ServerConfig *serverConfigPtr;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
+    serverConfigPtr = &globalConfig.getServerConfigs()[i];
+    for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
+      startServer(serverConfigPtr->getIPs()[j], serverConfigPtr->getPorts()[j]);
     }
   }
+}
+
+void Server::startServer(std::string ip, int port) {
+  servers.push_back(socket_create());
+
+  int last = servers.size() - 1;
+
+  non_blocking(servers[last]);
+  socket_bind(servers[last], ip, port);
+  socket_listen(servers[last]);
+  epoll_read(servers[last]);
 }
 
 Server::~Server() {}
@@ -128,8 +138,8 @@ void Server::client_write(int fd) {
 int Server::numListeningSockets() {
   int cnt = 0;
 
-  for (size_t i = 0; i < conf.getServerConfigs().size(); i++)
-    cnt += conf.getServerConfigs()[i].getIPs().size();
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++)
+    cnt += globalConfig.getServerConfigs()[i].getIPs().size();
 
   return cnt;
 }

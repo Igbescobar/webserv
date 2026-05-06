@@ -1,3 +1,7 @@
+# miscellanous
+
+`#pragma once` allowed?
+
 # multiple-servers branch
 
 Make sure the code is clean

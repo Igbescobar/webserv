@@ -1,5 +1,4 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
 #include "parser/config/ConfigParser.hpp"
 #include <map>
@@ -34,7 +33,7 @@ private:
   struct epoll_event events[MAX_EVENTS];
   std::map<int, std::string> read_map;
   std::map<int, std::string> write_map;
-  ConfigParser conf;
+  ConfigParser globalConfig;
 
   int socket_create();
   void socket_bind(int fd, std::string ip, int port);
@@ -59,11 +58,13 @@ private:
   int numListeningSockets();
   unsigned int IPToNum(std::string ip);
 
+  void startAllServers();
+
+  void startServer(std::string ip, int port);
+
 public:
   Server(const ConfigParser &conf);
   ~Server();
 
   void run();
 };
-
-#endif
