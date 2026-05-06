@@ -1,7 +1,3 @@
-# miscellanous
-
-`#pragma once` allowed?
-
 # new branch
 
 Distinguish `ServerConfig` when `accept()`,

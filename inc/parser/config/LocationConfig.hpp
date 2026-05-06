@@ -1,5 +1,4 @@
-#ifndef LOCATIONCONFIG_HPP
-#define LOCATIONCONFIG_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -47,5 +46,3 @@ private:
   long clientMaxBodySize;
   std::vector<std::string> cgiPassExtensions;
 };
-
-#endif

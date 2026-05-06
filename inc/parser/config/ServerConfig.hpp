@@ -1,5 +1,4 @@
-#ifndef SERVERCONFIG_HPP
-#define SERVERCONFIG_HPP
+#pragma once
 
 #include "parser/config/LocationConfig.hpp"
 #include <map>
@@ -42,5 +41,3 @@ private:
   std::map<int, std::string> errorPages;
   std::vector<LocationConfig> locations;
 };
-
-#endif
