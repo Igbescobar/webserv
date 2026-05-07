@@ -15,9 +15,11 @@ class HttpResponse {
 private:
   ServerConfig serverConfig;
   HttpRequest request;
+  std::string response;
 
 public:
   HttpResponse(ServerConfig serverConfig, HttpRequest request);
   // HttpResponse(ServerConfig &serverConfig, int errorCode);
   std::string getResponse();
+  void erase(int bytes);
 };

@@ -119,7 +119,7 @@ void Server::client_read(int fd) {
   epoll_write(fd);
 }
 
-// TODO: decide whether I control write chunks or the response handles it
+// TODO
 void Server::client_write(int fd) {
   int bytes_written;
 

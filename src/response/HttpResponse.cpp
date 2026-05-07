@@ -3,6 +3,10 @@
 #include "request/HttpRequest.hpp"
 
 HttpResponse::HttpResponse(ServerConfig serverConfig, HttpRequest request)
-    : serverConfig(serverConfig), request(request) {}
+    : serverConfig(serverConfig), request(request) {
+  response = RESPONSE;
+}
 
-std::string HttpResponse::getResponse() { return RESPONSE; }
+std::string HttpResponse::getResponse() { return response; }
+
+void HttpResponse::erase(int bytes) { response.erase(0, bytes); }
