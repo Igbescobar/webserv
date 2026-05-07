@@ -10,12 +10,6 @@
 
 #define MAX_CONNECTIONS 10
 #define MAX_EVENTS 10
-#define RESPONSE                                                               \
-  "HTTP/1.1 200 OK\n"                                                          \
-  "Content-Type: text/plain\n"                                                 \
-  "Content-Length: 13\n"                                                       \
-  "\n"                                                                         \
-  "Hello world!\n"
 #define BUF_SIZE 4096
 
 // TODO:

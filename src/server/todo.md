@@ -10,3 +10,9 @@ and act depending of the returned value
 
 Create a response object with the request object as argument and an error
 argument if there was an error
+
+# file structure
+
+Directories `request/` and `response/`?
+
+Directory `parser/config/` to `parse_config/`?

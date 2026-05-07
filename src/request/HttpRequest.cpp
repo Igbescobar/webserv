@@ -29,3 +29,5 @@ bool HttpRequest::isCompleted() {
     return false;
   return true;
 }
+
+ServerConfig HttpRequest::getServerConfig() { return serverConfig; }

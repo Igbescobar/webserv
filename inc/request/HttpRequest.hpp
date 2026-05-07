@@ -20,4 +20,6 @@ public:
   void append(std::string chunk);
 
   bool isCompleted();
+
+  ServerConfig getServerConfig();
 };

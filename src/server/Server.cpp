@@ -112,14 +112,14 @@ void Server::client_read(int fd) {
   if (!requestMap[fd].isCompleted())
     return;
 
-  // TODO: pass the request to the response
-  // HttpResponse response(serverConfig, requestMap[fd].getRequest());
+  HttpResponse response(requestMap[fd].getServerConfig(), requestMap[fd]);
 
   requestMap.erase(fd);
 
   epoll_write(fd);
 }
 
+// TODO: decide whether I control write chunks or the response handles it
 void Server::client_write(int fd) {
   int bytes_written;
 
