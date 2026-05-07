@@ -1,14 +1,15 @@
 #include "server/Server.hpp"
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
-#include "server/HttpRequest.hpp"
-#include "server/HttpResponse.hpp"
+#include "request/HttpRequest.hpp"
+#include "response/HttpResponse.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <sstream>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -80,8 +81,7 @@ void Server::handle_server(int fd) {
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
   non_blocking(new_socket);
-  requestMap.erase(new_socket);
-  requestMap[new_socket];
+  requestMap[new_socket] = HttpRequest(getServerConfig(fd));
   epoll_read(new_socket);
   return;
 }
@@ -158,4 +158,32 @@ unsigned int Server::IPToNum(std::string ip) {
   ss >> a >> dot >> b >> dot >> c >> dot >> d;
 
   return a << 24 | b << 16 | c << 8 | d;
+}
+
+void Server::printServersFds() {
+  for (size_t i = 0; i < servers.size(); i++) {
+    std::cout << servers[i] << " ";
+  }
+  std::cout << std::endl;
+}
+
+ServerConfig Server::getServerConfig(int server_fd) {
+  const ServerConfig *serverConfigPtr;
+  int idx = 0;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
+    serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
+    for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
+      if (server_fd == servers[idx]) {
+        // printServersFds();
+        // std::cout << "server_fd: " << server_fd << std::endl;
+        // std::cout << "idx: " << idx << std::endl;
+        // std::cout << "ip: " << serverConfigPtr->getIPs()[j] << std::endl;
+        // std::cout << "port: " << serverConfigPtr->getPorts()[j] << std::endl;
+        return *serverConfigPtr;
+      }
+      idx++;
+    }
+  }
+  throw std::runtime_error("ServerConfig not found");
 }

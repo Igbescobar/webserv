@@ -1,4 +1,4 @@
-#include "server/HttpResponse.hpp"
+#include "response/HttpResponse.hpp"
 #include "parser/config/ServerConfig.hpp"
 
 HttpResponse::HttpResponse(ServerConfig &serverConfig,

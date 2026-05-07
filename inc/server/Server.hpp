@@ -1,7 +1,8 @@
 #pragma once
 
 #include "parser/config/ConfigParser.hpp"
-#include "server/HttpRequest.hpp"
+#include "parser/config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
@@ -16,7 +17,6 @@
   "\n"                                                                         \
   "Hello world!\n"
 #define BUF_SIZE 4096
-#define DELIMETER "\r\n\r\n"
 
 // TODO:
 // cleanup resources: fd, etc (do not leak fd)
@@ -60,8 +60,11 @@ private:
   unsigned int IPToNum(std::string ip);
 
   void startAllServers();
-
   void startServer(std::string ip, int port);
+
+  ServerConfig getServerConfig(int server_fd);
+
+  void printServersFds();
 
 public:
   Server(const ConfigParser &conf);
