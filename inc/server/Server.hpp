@@ -3,6 +3,7 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
+#include "response/HttpResponse.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
@@ -27,7 +28,7 @@ private:
   int epoll_fd;
   struct epoll_event events[MAX_EVENTS];
   std::map<int, HttpRequest> requestMap;
-  std::map<int, std::string> responseMap;
+  std::map<int, HttpResponse> responseMap;
   ConfigParser globalConfig;
 
   int socket_create();

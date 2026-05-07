@@ -18,8 +18,14 @@ private:
   std::string response;
 
 public:
+  HttpResponse();
   HttpResponse(ServerConfig serverConfig, HttpRequest request);
   // HttpResponse(ServerConfig &serverConfig, int errorCode);
+  ~HttpResponse();
+  HttpResponse(const HttpResponse &other);
+  HttpResponse &operator=(const HttpResponse &other);
+
   std::string getResponse();
   void erase(int bytes);
+  bool empty();
 };

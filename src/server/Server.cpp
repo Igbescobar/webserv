@@ -112,29 +112,26 @@ void Server::client_read(int fd) {
   if (!requestMap[fd].isCompleted())
     return;
 
-  // TODO: save to responseMap here?
-  HttpResponse response(requestMap[fd].getServerConfig(), requestMap[fd]);
+  responseMap[fd] =
+      HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
 
   requestMap.erase(fd);
 
   epoll_write(fd);
 }
 
-// TODO
 void Server::client_write(int fd) {
-  int bytes_written;
+  int bytes_written = write(fd, responseMap[fd].getResponse().c_str(),
+                            responseMap[fd].getResponse().size());
 
-  if (responseMap[fd].empty())
-    responseMap[fd] = RESPONSE;
-
-  bytes_written = write(fd, responseMap[fd].c_str(), responseMap[fd].size());
   if (bytes_written <= 0) {
     epoll_remove(fd);
     responseMap.erase(fd);
     close(fd);
   }
 
-  responseMap[fd].erase(0, bytes_written);
+  responseMap[fd].erase(bytes_written);
+
   if (responseMap[fd].empty()) {
     epoll_remove(fd);
     responseMap.erase(fd);
