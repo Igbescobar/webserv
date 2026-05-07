@@ -1,19 +1,40 @@
 #include "server/Server.hpp"
+#include "parser/config/ConfigParser.hpp"
+#include "parser/config/ServerConfig.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
+#include <sstream>
 #include <sys/socket.h>
 #include <unistd.h>
 
-Server::Server() {
-  socket_create();
-  non_blocking(server_fd);
-  socket_bind();
-  socket_listen();
+Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
   epoll_create();
-  epoll_read(server_fd);
+  startAllServers();
+}
+
+void Server::startAllServers() {
+  const ServerConfig *serverConfigPtr;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
+    serverConfigPtr = &globalConfig.getServerConfigs()[i];
+    for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
+      startServer(serverConfigPtr->getIPs()[j], serverConfigPtr->getPorts()[j]);
+    }
+  }
+}
+
+void Server::startServer(std::string ip, int port) {
+  servers.push_back(socket_create());
+
+  int last = servers.size() - 1;
+
+  non_blocking(servers[last]);
+  socket_bind(servers[last], ip, port);
+  socket_listen(servers[last]);
+  epoll_read(servers[last]);
 }
 
 Server::~Server() {}
@@ -38,18 +59,21 @@ void Server::handle_events(int n) {
 }
 
 void Server::handle_event(int fd, uint32_t events) {
-  if (fd == server_fd)
-    handle_server();
-  else
-    handle_client(fd, events);
+  for (size_t i = 0; i < servers.size(); i++) {
+    if (fd == servers[i]) {
+      handle_server(servers[i]);
+      return;
+    }
+  }
+  handle_client(fd, events);
 }
 
-void Server::handle_server() {
+void Server::handle_server(int fd) {
   int new_socket;
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  new_socket = accept(server_fd, (struct sockaddr *)&addr, &addr_len);
+  new_socket = accept(fd, (struct sockaddr *)&addr, &addr_len);
   if (new_socket < 0)
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
@@ -109,4 +133,23 @@ void Server::client_write(int fd) {
     write_map.erase(fd);
     close(fd);
   }
+}
+
+int Server::numListeningSockets() {
+  int cnt = 0;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++)
+    cnt += globalConfig.getServerConfigs()[i].getIPs().size();
+
+  return cnt;
+}
+
+unsigned int Server::IPToNum(std::string ip) {
+  std::stringstream ss(ip);
+  unsigned int a, b, c, d;
+  char dot;
+
+  ss >> a >> dot >> b >> dot >> c >> dot >> d;
+
+  return a << 24 | b << 16 | c << 8 | d;
 }

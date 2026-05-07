@@ -1,6 +1,8 @@
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+
 #include <cstdlib>
+#include <stdexcept>
 
 ConfigParser::ConfigParser() : tokenPosition(0) {}
 
@@ -64,6 +66,8 @@ void ConfigParser::parseServerDirective(ServerConfig &config) {
     parseIndex(config);
   } else if (directive == "error_page") {
     parseErrorPage(config);
+  } else if (directive == "location") {
+    parseLocation(config);
   } else {
     throw std::runtime_error("Invalid server directive: " + directive);
   }

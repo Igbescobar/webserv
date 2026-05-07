@@ -1,11 +1,11 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
+#include "parser/config/ConfigParser.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
+#include <vector>
 
-#define PORT 8080
 #define MAX_CONNECTIONS 10
 #define MAX_EVENTS 10
 #define RESPONSE                                                               \
@@ -28,20 +28,21 @@
 
 class Server {
 private:
-  int server_fd;
+  std::vector<int> servers;
   int epoll_fd;
   struct epoll_event events[MAX_EVENTS];
   std::map<int, std::string> read_map;
   std::map<int, std::string> write_map;
+  ConfigParser globalConfig;
 
-  void socket_create();
-  void socket_bind();
-  void socket_listen();
+  int socket_create();
+  void socket_bind(int fd, std::string ip, int port);
+  void socket_listen(int fd);
 
   void handle_event(int fd, uint32_t events);
   void handle_events(int n);
 
-  void handle_server();
+  void handle_server(int fd);
   void handle_client(int fd, uint32_t events);
 
   void client_read(int fd);
@@ -54,11 +55,16 @@ private:
 
   void non_blocking(int fd);
 
+  int numListeningSockets();
+  unsigned int IPToNum(std::string ip);
+
+  void startAllServers();
+
+  void startServer(std::string ip, int port);
+
 public:
-  Server();
+  Server(const ConfigParser &conf);
   ~Server();
 
   void run();
 };
-
-#endif
