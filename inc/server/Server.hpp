@@ -27,7 +27,7 @@ private:
   int epoll_fd;
   struct epoll_event events[MAX_EVENTS];
   std::map<int, HttpRequest> requestMap;
-  std::map<int, std::string> write_map;
+  std::map<int, std::string> responseMap;
   ConfigParser globalConfig;
 
   int socket_create();
