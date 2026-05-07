@@ -91,9 +91,9 @@ void Server::handle_server(int fd) {
 
 void Server::handle_client(int fd, uint32_t events) {
 	if (events & EPOLLIN)
-{
-	client_read(fd);
-}
+	{
+		client_read(fd);
+	}
 	else if (events & EPOLLOUT)
 		client_write(fd);
 }
@@ -112,9 +112,9 @@ void Server::client_read(int fd) {
 
 	buffer[bytes_read] = '\0';
 	read_map[fd] += buffer;
-
+	std::cout<<"--------read_map printing starting here------\n";
 	std::cout << "\"" << read_map[fd] << "\"";
-
+	std::cout<<"--------read_map printing ending here------\n";
 	size_t pos = read_map[fd].find(DELIMETER);
 	if (pos == std::string::npos)
 		return;
