@@ -1,10 +1,39 @@
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include <sstream>
 
 HttpResponse::HttpResponse()
-    : version("HTTP/1.1"), statusCode(200), statusMessage("OK") {}
+    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"),
+      isBuilt(false) {}
+
+HttpResponse::HttpResponse(const HttpResponse &other) { *this = other; }
+
+HttpResponse &HttpResponse::operator=(const HttpResponse &other) {
+  if (this != &other) {
+    this->version = other.version;
+    this->statusCode = other.statusCode;
+    this->statusMessage = other.statusMessage;
+    this->headers = other.headers;
+    this->body = other.body;
+    this->rawResponse = other.rawResponse;
+    this->isBuilt = other.isBuilt;
+  }
+  return *this;
+}
 
 HttpResponse::~HttpResponse() {}
+
+HttpResponse::HttpResponse(const ServerConfig &config, const IRequest &req)
+    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"), isBuilt(true) {
+  ResponseHandler handler(config, req);
+  this->rawResponse = handler.handle();
+}
+
+HttpResponse::HttpResponse(const ServerConfig &config, int errorCode)
+    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"), isBuilt(true) {
+  ResponseHandler handler(config, errorCode);
+  this->rawResponse = handler.handle();
+}
 
 void HttpResponse::setStatusMessage(int code) {
   switch (code) {
@@ -64,4 +93,26 @@ std::string HttpResponse::toString() const {
   responseStream << this->body;
 
   return responseStream.str();
+}
+
+std::string HttpResponse::getResponse() {
+  if (!this->isBuilt) {
+    this->rawResponse = this->toString();
+    this->isBuilt = true;
+  }
+  return this->rawResponse;
+}
+
+void HttpResponse::erase(int bytes) {
+  if (bytes > 0) {
+    if (bytes >= (int)this->rawResponse.length()) {
+      this->rawResponse.clear();
+    } else {
+      this->rawResponse.erase(0, bytes);
+    }
+  }
+}
+
+bool HttpResponse::empty() const {
+  return this->isBuilt && this->rawResponse.empty();
 }

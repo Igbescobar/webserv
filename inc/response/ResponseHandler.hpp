@@ -1,5 +1,4 @@
-#ifndef RESPONSEHANDLER_HPP
-#define RESPONSEHANDLER_HPP
+#pragma once
 
 #include "parser_config/ServerConfig.hpp"
 #include "request/IRequest.hpp"
@@ -23,5 +22,3 @@ private:
                        const std::string &method) const;
   std::string handleRedirect(const LocationConfig *location) const;
 };
-
-#endif

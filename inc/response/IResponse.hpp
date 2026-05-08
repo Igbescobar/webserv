@@ -1,5 +1,4 @@
-#ifndef IRESPONSE_HPP
-#define IRESPONSE_HPP
+#pragma once
 
 #include <string>
 
@@ -13,5 +12,3 @@ public:
 
   virtual std::string toString() const = 0;
 };
-
-#endif

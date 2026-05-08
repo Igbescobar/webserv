@@ -1,6 +1,4 @@
-#ifndef FILERESPONDER_HPP
-#define FILERESPONDER_HPP
-
+#pragma once
 #include "parser_config/ServerConfig.hpp"
 #include "request/IRequest.hpp"
 #include <string>
@@ -28,5 +26,3 @@ private:
                                      const std::string &dirPath);
   static std::string buildFileResponse(const std::string &filePath);
 };
-
-#endif

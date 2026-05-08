@@ -1,5 +1,4 @@
-#ifndef ERRORRESPONSEBUILDER_HPP
-#define ERRORRESPONSEBUILDER_HPP
+#pragma once
 
 #include "parser_config/ServerConfig.hpp"
 #include <string>
@@ -20,5 +19,3 @@ private:
   static std::string defaultErrorHtml(int statusCode,
                                       const std::string &message);
 };
-
-#endif

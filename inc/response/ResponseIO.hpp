@@ -1,5 +1,4 @@
-#ifndef RESPONSEIO_HPP
-#define RESPONSEIO_HPP
+#pragma once
 
 #include <string>
 
@@ -9,5 +8,3 @@ public:
   static bool readFile(const std::string &path, std::string &out);
   static std::string guessContentType(const std::string &path);
 };
-
-#endif
