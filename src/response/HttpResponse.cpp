@@ -11,6 +11,11 @@ HttpResponse::HttpResponse(ServerConfig serverConfig, HttpRequest request)
   response = RESPONSE;
 }
 
+HttpResponse::HttpResponse(ServerConfig serverConfig, int errorCode)
+    : serverConfig(serverConfig), errorCode(errorCode) {
+  response = RESPONSE;
+}
+
 HttpResponse::HttpResponse(const HttpResponse &other) {
   serverConfig = other.serverConfig;
   request = other.request;

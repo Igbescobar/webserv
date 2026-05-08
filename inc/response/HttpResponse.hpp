@@ -16,11 +16,12 @@ private:
   ServerConfig serverConfig;
   HttpRequest request;
   std::string response;
+  int errorCode;
 
 public:
   HttpResponse();
   HttpResponse(ServerConfig serverConfig, HttpRequest request);
-  // HttpResponse(ServerConfig &serverConfig, int errorCode);
+  HttpResponse(ServerConfig serverConfig, int errorCode);
   ~HttpResponse();
   HttpResponse(const HttpResponse &other);
   HttpResponse &operator=(const HttpResponse &other);

@@ -108,12 +108,23 @@ void Server::client_read(int fd) {
   buffer[bytes_read] = '\0';
   requestMap[fd].append(buffer);
 
-  // TODO: request could be imcomplete, complete or error
-  if (!requestMap[fd].isCompleted())
+  if (requestMap[fd].getState() == INCOMPLETE)
     return;
 
-  responseMap[fd] =
-      HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
+  switch (requestMap[fd].getState()) {
+  case INCOMPLETE:
+    return;
+  case COMPLETE:
+    responseMap[fd] =
+        HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
+    break;
+  case ERROR:
+    responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
+                                   requestMap[fd].getErrorCode());
+    break;
+  default:
+    throw std::runtime_error("undefined t_state value");
+  }
 
   requestMap.erase(fd);
 
