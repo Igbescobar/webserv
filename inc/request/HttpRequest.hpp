@@ -30,4 +30,6 @@ public:
   int getErrorCode();
 
   ServerConfig getServerConfig();
+
+  std::string getRequest();
 };

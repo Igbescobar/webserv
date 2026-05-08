@@ -34,8 +34,10 @@ void HttpRequest::append(std::string chunk) {
 
 void HttpRequest::updateState() {
   size_t pos = buf.find(DELIMETER);
-  if (pos == std::string::npos)
+  if (pos == std::string::npos) {
     state = INCOMPLETE;
+    return;
+  }
   state = COMPLETE;
 }
 
@@ -44,3 +46,5 @@ ServerConfig HttpRequest::getServerConfig() { return serverConfig; }
 t_state HttpRequest::getState() { return state; }
 
 int HttpRequest::getErrorCode() { return errorCode; }
+
+std::string HttpRequest::getRequest() { return buf; }
