@@ -184,11 +184,6 @@ ServerConfig Server::getServerConfig(int server_fd) {
     serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
     for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
       if (server_fd == servers[idx]) {
-        // printServersFds();
-        // std::cout << "server_fd: " << server_fd << std::endl;
-        // std::cout << "idx: " << idx << std::endl;
-        // std::cout << "ip: " << serverConfigPtr->getIPs()[j] << std::endl;
-        // std::cout << "port: " << serverConfigPtr->getPorts()[j] << std::endl;
         return *serverConfigPtr;
       }
       idx++;
