@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parser/config/ConfigParser.hpp"
+#include "parser_config/ConfigParser.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>

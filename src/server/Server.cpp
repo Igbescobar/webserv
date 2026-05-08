@@ -1,6 +1,6 @@
 #include "server/Server.hpp"
-#include "parser/config/ConfigParser.hpp"
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ConfigParser.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
