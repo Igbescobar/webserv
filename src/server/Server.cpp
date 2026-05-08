@@ -1,12 +1,15 @@
 #include "server/Server.hpp"
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
+#include "response/HttpResponse.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <sstream>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -78,7 +81,7 @@ void Server::handle_server(int fd) {
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
   non_blocking(new_socket);
-  read_map.erase(new_socket);
+  requestMap[new_socket] = HttpRequest(getServerConfig(fd));
   epoll_read(new_socket);
   return;
 }
@@ -97,40 +100,49 @@ void Server::client_read(int fd) {
   bytes_read = read(fd, buffer, BUF_SIZE);
   if (bytes_read <= 0) {
     epoll_remove(fd);
-    read_map.erase(fd);
+    requestMap.erase(fd);
     close(fd);
     return;
   }
 
   buffer[bytes_read] = '\0';
-  read_map[fd] += buffer;
+  requestMap[fd].append(buffer);
 
-  size_t pos = read_map[fd].find(DELIMETER);
-  if (pos == std::string::npos)
+  switch (requestMap[fd].getState()) {
+  case INCOMPLETE:
     return;
+  case COMPLETE:
+    responseMap[fd] =
+        HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
+    break;
+  case ERROR:
+    responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
+                                   requestMap[fd].getErrorCode());
+    break;
+  default:
+    throw std::runtime_error("undefined t_state value");
+  }
 
-  read_map.erase(fd);
+  requestMap.erase(fd);
 
   epoll_write(fd);
 }
 
 void Server::client_write(int fd) {
-  int bytes_written;
+  int bytes_written = write(fd, responseMap[fd].getResponse().c_str(),
+                            responseMap[fd].getResponse().size());
 
-  if (write_map[fd].empty())
-    write_map[fd] = RESPONSE;
-
-  bytes_written = write(fd, write_map[fd].c_str(), write_map[fd].size());
   if (bytes_written <= 0) {
     epoll_remove(fd);
-    write_map.erase(fd);
+    responseMap.erase(fd);
     close(fd);
   }
 
-  write_map[fd].erase(0, bytes_written);
-  if (write_map[fd].empty()) {
+  responseMap[fd].erase(bytes_written);
+
+  if (responseMap[fd].empty()) {
     epoll_remove(fd);
-    write_map.erase(fd);
+    responseMap.erase(fd);
     close(fd);
   }
 }
@@ -152,4 +164,27 @@ unsigned int Server::IPToNum(std::string ip) {
   ss >> a >> dot >> b >> dot >> c >> dot >> d;
 
   return a << 24 | b << 16 | c << 8 | d;
+}
+
+void Server::printServersFds() {
+  for (size_t i = 0; i < servers.size(); i++) {
+    std::cout << servers[i] << " ";
+  }
+  std::cout << std::endl;
+}
+
+ServerConfig Server::getServerConfig(int server_fd) {
+  const ServerConfig *serverConfigPtr;
+  int idx = 0;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
+    serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
+    for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
+      if (server_fd == servers[idx]) {
+        return *serverConfigPtr;
+      }
+      idx++;
+    }
+  }
+  throw std::runtime_error("ServerConfig not found");
 }

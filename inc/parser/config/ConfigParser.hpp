@@ -1,5 +1,4 @@
-#ifndef CONFIGPARSER_HPP
-#define CONFIGPARSER_HPP
+#pragma once
 
 #include "parser/config/LocationConfig.hpp"
 #include "parser/config/ServerConfig.hpp"
@@ -87,5 +86,3 @@ private:
   void parseLocationUploadPath(LocationConfig &location);
   void parseLocationClientMaxBodySize(LocationConfig &location);
 };
-
-#endif
