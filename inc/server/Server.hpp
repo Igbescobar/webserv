@@ -1,6 +1,9 @@
 #pragma once
 
 #include "parser_config/ConfigParser.hpp"
+#include "parser_config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
+#include "response/HttpResponse.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
@@ -8,14 +11,7 @@
 
 #define MAX_CONNECTIONS 10
 #define MAX_EVENTS 10
-#define RESPONSE                                                               \
-  "HTTP/1.1 200 OK\n"                                                          \
-  "Content-Type: text/plain\n"                                                 \
-  "Content-Length: 13\n"                                                       \
-  "\n"                                                                         \
-  "Hello world!\n"
 #define BUF_SIZE 4096
-#define DELIMETER "\r\n\r\n"
 
 // TODO:
 // cleanup resources: fd, etc (do not leak fd)
@@ -31,8 +27,8 @@ private:
   std::vector<int> servers;
   int epoll_fd;
   struct epoll_event events[MAX_EVENTS];
-  std::map<int, std::string> read_map;
-  std::map<int, std::string> write_map;
+  std::map<int, HttpRequest> requestMap;
+  std::map<int, HttpResponse> responseMap;
   ConfigParser globalConfig;
 
   int socket_create();
@@ -59,8 +55,11 @@ private:
   unsigned int IPToNum(std::string ip);
 
   void startAllServers();
-
   void startServer(std::string ip, int port);
+
+  ServerConfig getServerConfig(int server_fd);
+
+  void printServersFds();
 
 public:
   Server(const ConfigParser &conf);
