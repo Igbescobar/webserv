@@ -108,9 +108,6 @@ void Server::client_read(int fd) {
   buffer[bytes_read] = '\0';
   requestMap[fd].append(buffer);
 
-  if (requestMap[fd].getState() == INCOMPLETE)
-    return;
-
   switch (requestMap[fd].getState()) {
   case INCOMPLETE:
     return;
