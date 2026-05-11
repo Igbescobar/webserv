@@ -37,20 +37,19 @@ void Server::startSingleServer(std::string ip, int port) {
   setNonBlocking(serverFds[last]);
   socketBind(serverFds[last], ip, port);
   socketListen(serverFds[last]);
-  epollAddRead(serverFds[last]);
+  epoll.addRead(serverFds[last]);
 }
 
 void Server::run() {
-  epollCreate();
   startAllServers();
   while (true) {
-    handleEvents(epollWait());
+    handleEvents(epoll.wait());
   }
 }
 
 void Server::handleEvents(int n) {
   for (int i = 0; i < n; i++)
-    handleSingleEvent(epollEvents[i].data.fd, epollEvents[i].events);
+    handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
 void Server::handleSingleEvent(int fd, uint32_t eventsMask) {
@@ -74,7 +73,7 @@ void Server::handleServer(int fd) {
 
   setNonBlocking(new_socket);
   requestMap[new_socket] = HttpRequest(getServerConfig(fd));
-  epollAddRead(new_socket);
+  epoll.addRead(new_socket);
   return;
 }
 
@@ -91,7 +90,7 @@ void Server::clientRead(int fd) {
 
   bytes_read = read(fd, buffer, BUF_SIZE);
   if (bytes_read <= 0) {
-    epollRemove(fd);
+    epoll.remove(fd);
     requestMap.erase(fd);
     close(fd);
     return;
@@ -117,7 +116,7 @@ void Server::clientRead(int fd) {
 
   requestMap.erase(fd);
 
-  epollModWrite(fd);
+  epoll.modWrite(fd);
 }
 
 void Server::clientWrite(int fd) {
@@ -125,7 +124,7 @@ void Server::clientWrite(int fd) {
                             responseMap[fd].getResponse().size());
 
   if (bytes_written <= 0) {
-    epollRemove(fd);
+    epoll.remove(fd);
     responseMap.erase(fd);
     close(fd);
   }
@@ -133,7 +132,7 @@ void Server::clientWrite(int fd) {
   responseMap[fd].erase(bytes_written);
 
   if (responseMap[fd].empty()) {
-    epollRemove(fd);
+    epoll.remove(fd);
     responseMap.erase(fd);
     close(fd);
   }
