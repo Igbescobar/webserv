@@ -23,18 +23,6 @@ HttpResponse &HttpResponse::operator=(const HttpResponse &other) {
 
 HttpResponse::~HttpResponse() {}
 
-HttpResponse::HttpResponse(const ServerConfig &config, const IRequest &req)
-    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"), isBuilt(true) {
-  ResponseHandler handler(config, req);
-  this->rawResponse = handler.handle();
-}
-
-HttpResponse::HttpResponse(const ServerConfig &config, int errorCode)
-    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"), isBuilt(true) {
-  ResponseHandler handler(config, errorCode);
-  this->rawResponse = handler.handle();
-}
-
 void HttpResponse::setStatusMessage(int code) {
   switch (code) {
   case 200:
@@ -101,18 +89,4 @@ std::string HttpResponse::getResponse() {
     this->isBuilt = true;
   }
   return this->rawResponse;
-}
-
-void HttpResponse::erase(int bytes) {
-  if (bytes > 0) {
-    if (bytes >= (int)this->rawResponse.length()) {
-      this->rawResponse.clear();
-    } else {
-      this->rawResponse.erase(0, bytes);
-    }
-  }
-}
-
-bool HttpResponse::empty() const {
-  return this->isBuilt && this->rawResponse.empty();
 }

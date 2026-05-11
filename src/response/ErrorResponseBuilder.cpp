@@ -5,14 +5,14 @@
 #include <map>
 #include <sstream>
 
-std::string ErrorResponseBuilder::build(const ServerConfig &config,
-                                        int statusCode) {
+HttpResponse ErrorResponseBuilder::build(const ServerConfig &config,
+                                         int statusCode) {
   return build(config, statusCode, reasonPhrase(statusCode));
 }
 
-std::string ErrorResponseBuilder::build(const ServerConfig &config,
-                                        int statusCode,
-                                        const std::string &message) {
+HttpResponse ErrorResponseBuilder::build(const ServerConfig &config,
+                                         int statusCode,
+                                         const std::string &message) {
   std::string body;
   std::string contentType;
 
@@ -21,14 +21,14 @@ std::string ErrorResponseBuilder::build(const ServerConfig &config,
     response.setStatusCode(statusCode);
     response.setHeader("Content-Type", contentType);
     response.setBody(body);
-    return response.toString();
+    return response;
   }
 
   HttpResponse response;
   response.setStatusCode(statusCode);
   response.setHeader("Content-Type", "text/html");
   response.setBody(defaultErrorHtml(statusCode, message));
-  return response.toString();
+  return response;
 }
 
 const char *ErrorResponseBuilder::reasonPhrase(int statusCode) {

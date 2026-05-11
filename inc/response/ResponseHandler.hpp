@@ -1,24 +1,27 @@
 #pragma once
 
 #include "parser_config/ServerConfig.hpp"
-#include "request/IRequest.hpp"
 #include <string>
+
+class HttpRequest;
+class HttpResponse;
 
 class ResponseHandler {
 public:
-  ResponseHandler(const ServerConfig &config, const IRequest &req);
+  ResponseHandler(const ServerConfig &config, const HttpRequest &req);
   ResponseHandler(const ServerConfig &config, int errorCode);
 
-  std::string handle();
+  HttpResponse handle();
 
 private:
   const ServerConfig &config;
-  const IRequest *req;
+  const HttpRequest *req;
   const int errorCode;
 
-  std::string handleGet();
+  HttpResponse handleGet();
 
   bool isMethodAllowed(const LocationConfig *location,
                        const std::string &method) const;
-  std::string handleRedirect(const LocationConfig *location) const;
+  bool handleRedirect(const LocationConfig *location,
+                      HttpResponse &response) const;
 };

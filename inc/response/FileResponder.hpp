@@ -1,13 +1,14 @@
 #pragma once
 #include "parser_config/ServerConfig.hpp"
-#include "request/IRequest.hpp"
 #include <string>
+
+class HttpRequest;
 
 class FileResponder {
 public:
-  static std::string handleGet(const ServerConfig &config,
-                               const LocationConfig *location,
-                               const IRequest &req);
+  static HttpResponse handleGet(const ServerConfig &config,
+                                const LocationConfig *location,
+                                const HttpRequest &req);
 
 private:
   static bool isSafeUri(const std::string &uri);
@@ -20,9 +21,9 @@ private:
                                   const LocationConfig *location,
                                   const std::string &dirPath);
 
-  static std::string handleDirectory(const ServerConfig &config,
-                                     const LocationConfig *location,
-                                     const std::string &uri,
-                                     const std::string &dirPath);
-  static std::string buildFileResponse(const std::string &filePath);
+  static HttpResponse handleDirectory(const ServerConfig &config,
+                                      const LocationConfig *location,
+                                      const std::string &uri,
+                                      const std::string &dirPath);
+  static HttpResponse buildFileResponse(const std::string &filePath);
 };

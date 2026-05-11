@@ -2,12 +2,13 @@
 
 #include "parser_config/ServerConfig.hpp"
 #include <string>
+#include "HttpResponse.hpp"
 
 class ErrorResponseBuilder {
 public:
-  static std::string build(const ServerConfig &config, int statusCode);
-  static std::string build(const ServerConfig &config, int statusCode,
-                           const std::string &message);
+  static HttpResponse build(const ServerConfig &config, int statusCode);
+  static HttpResponse build(const ServerConfig &config, int statusCode,
+                            const std::string &message);
 
 private:
   static const char *reasonPhrase(int statusCode);

@@ -3,6 +3,7 @@
 #include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -111,14 +112,15 @@ void Server::client_read(int fd) {
   switch (requestMap[fd].getState()) {
   case INCOMPLETE:
     return;
-  case COMPLETE:
-    responseMap[fd] =
-        HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
-    break;
-  case ERROR:
-    responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
-                                   requestMap[fd].getErrorCode());
-    break;
+  case COMPLETE: {
+    ResponseHandler handler(requestMap[fd].getServerConfig(), requestMap[fd]);
+    responseMap[fd] = handler.handle();
+  } break;
+  case ERROR: {
+    ResponseHandler handler(requestMap[fd].getServerConfig(),
+                            requestMap[fd].getErrorCode());
+    responseMap[fd] = handler.handle();
+  } break;
   default:
     throw std::runtime_error("undefined t_state value");
   }
@@ -133,14 +135,6 @@ void Server::client_write(int fd) {
                             responseMap[fd].getResponse().size());
 
   if (bytes_written <= 0) {
-    epoll_remove(fd);
-    responseMap.erase(fd);
-    close(fd);
-  }
-
-  responseMap[fd].erase(bytes_written);
-
-  if (responseMap[fd].empty()) {
     epoll_remove(fd);
     responseMap.erase(fd);
     close(fd);

@@ -1,4 +1,5 @@
 #include "response/FileResponder.hpp"
+#include "request/HttpRequest.hpp"
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
 #include "response/ResponseIO.hpp"
@@ -6,9 +7,9 @@
 #include <sys/stat.h>
 #include <vector>
 
-std::string FileResponder::handleGet(const ServerConfig &config,
-                                     const LocationConfig *location,
-                                     const IRequest &req) {
+HttpResponse FileResponder::handleGet(const ServerConfig &config,
+                                      const LocationConfig *location,
+                                      const HttpRequest &req) {
   const std::string uri = req.getUri();
 
   if (!isSafeUri(uri))
@@ -37,10 +38,10 @@ bool FileResponder::isDirectory(const std::string &path) {
     return (S_ISDIR(s.st_mode));
   return false;
 }
-std::string FileResponder::handleDirectory(const ServerConfig &config,
-                                           const LocationConfig *location,
-                                           const std::string &uri,
-                                           const std::string &dirPath) {
+HttpResponse FileResponder::handleDirectory(const ServerConfig &config,
+                                            const LocationConfig *location,
+                                            const std::string &uri,
+                                            const std::string &dirPath) {
   const std::string indexPath = getIndexPath(config, location, dirPath);
   if (!indexPath.empty())
     return buildFileResponse(indexPath);
@@ -49,7 +50,7 @@ std::string FileResponder::handleDirectory(const ServerConfig &config,
     HttpResponse response;
     response.setStatusCode(301);
     response.setHeader("Location", uri + "/");
-    return response.toString();
+    return response;
   }
 
   if (location != NULL && location->getAutoIndex()) {
@@ -104,19 +105,19 @@ bool FileResponder::isRegularFile(const std::string &path) {
   return false;
 }
 
-std::string FileResponder::buildFileResponse(const std::string &filePath) {
+HttpResponse FileResponder::buildFileResponse(const std::string &filePath) {
   std::string content;
   if (!ResponseIO::readFile(filePath, content)) {
     HttpResponse response;
     response.setStatusCode(403);
     response.setHeader("Content-Type", "text/plain");
     response.setBody("Forbidden");
-    return response.toString();
+    return response;
   }
 
   HttpResponse response;
   response.setStatusCode(200);
   response.setHeader("Content-Type", ResponseIO::guessContentType(filePath));
   response.setBody(content);
-  return response.toString();
+  return response;
 }

@@ -1,16 +1,17 @@
 #include "response/ResponseHandler.hpp"
+#include "request/HttpRequest.hpp"
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/FileResponder.hpp"
 #include "response/HttpResponse.hpp"
 
 ResponseHandler::ResponseHandler(const ServerConfig &config,
-                                 const IRequest &req)
+                                 const HttpRequest &req)
     : config(config), req(&req), errorCode(0) {}
 
 ResponseHandler::ResponseHandler(const ServerConfig &config, int errorCode)
     : config(config), req(NULL), errorCode(errorCode) {}
 
-std::string ResponseHandler::handle() {
+HttpResponse ResponseHandler::handle() {
   if (errorCode != 0)
     return ErrorResponseBuilder::build(config, errorCode);
 
@@ -23,8 +24,8 @@ std::string ResponseHandler::handle() {
   if (!isMethodAllowed(location, method))
     return ErrorResponseBuilder::build(config, 405);
 
-  std::string redirection = handleRedirect(location);
-  if (!redirection.empty())
+  HttpResponse redirection;
+  if (handleRedirect(location, redirection))
     return redirection;
 
   if (method == "GET")
@@ -46,13 +47,13 @@ bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
   return false;
 }
 
-std::string
-ResponseHandler::handleRedirect(const LocationConfig *location) const {
+bool ResponseHandler::handleRedirect(const LocationConfig *location,
+                                     HttpResponse &response) const {
   if (location != NULL && !location->getReturnTarget().empty()) {
     HttpResponse response;
     response.setStatusCode(301);
     response.setHeader("Location", location->getReturnTarget());
-    return response.toString();
+    return true;
   }
-  return "";
+  return false;
 }
