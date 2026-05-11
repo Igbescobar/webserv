@@ -1,5 +1,6 @@
 #include "response/FileResponder.hpp"
 #include "request/HttpRequest.hpp"
+#include "response/AutoIndex.hpp"
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
 #include "response/ResponseIO.hpp"
@@ -54,8 +55,15 @@ HttpResponse FileResponder::handleDirectory(const ServerConfig &config,
   }
 
   if (location != NULL && location->getAutoIndex()) {
-    // TODO: Build HTML Directory listing all the files inside the foler
-    return ErrorResponseBuilder::build(config, 501);
+    const std::string html = AutoIndex::buildHtml(uri, dirPath);
+    if (html.empty())
+      return ErrorResponseBuilder::build(config, 403);
+
+    HttpResponse response;
+    response.setStatusCode(200);
+    response.setHeader("Content-Type", "text/html");
+    response.setBody(html);
+    return response;
   }
 
   return ErrorResponseBuilder::build(config, 403);
