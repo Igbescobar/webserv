@@ -23,12 +23,13 @@ void Server::startAllServers() {
   for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
     serverConfigPtr = &globalConfig.getServerConfigs()[i];
     for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
-      startServer(serverConfigPtr->getIPs()[j], serverConfigPtr->getPorts()[j]);
+      startSingleServer(serverConfigPtr->getIPs()[j],
+                        serverConfigPtr->getPorts()[j]);
     }
   }
 }
 
-void Server::startServer(std::string ip, int port) {
+void Server::startSingleServer(std::string ip, int port) {
   serverFds.push_back(socketCreate());
 
   int last = serverFds.size() - 1;
@@ -49,10 +50,10 @@ void Server::run() {
 
 void Server::handleEvents(int n) {
   for (int i = 0; i < n; i++)
-    handleEvent(epollEvents[i].data.fd, epollEvents[i].events);
+    handleSingleEvent(epollEvents[i].data.fd, epollEvents[i].events);
 }
 
-void Server::handleEvent(int fd, uint32_t eventsMask) {
+void Server::handleSingleEvent(int fd, uint32_t eventsMask) {
   for (size_t i = 0; i < serverFds.size(); i++) {
     if (fd == serverFds[i]) {
       handleServer(serverFds[i]);

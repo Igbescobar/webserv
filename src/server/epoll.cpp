@@ -39,7 +39,7 @@ void Server::epollRemove(int fd) {
 int Server::epollWait() {
   int numEvents;
 
-  numEvents = epoll_wait(epollFd, epollEvents, MAX_EVENTS, -1);
+  numEvents = epoll_wait(epollFd, epollEvents, MAX_EVENTS, EPOLL_TIMEOUT_MS);
   if (numEvents < 0)
     throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
   return numEvents;

@@ -12,6 +12,7 @@
 #define MAX_CONNECTIONS 10
 #define MAX_EVENTS 10
 #define BUF_SIZE 4096
+#define EPOLL_TIMEOUT_MS 100
 
 class Server {
 private:
@@ -27,7 +28,7 @@ private:
   void socketListen(int fd);
 
   void handleEvents(int n);
-  void handleEvent(int fd, uint32_t eventsMask);
+  void handleSingleEvent(int fd, uint32_t eventsMask);
 
   void handleServer(int fd);
   void handleClient(int fd, uint32_t eventsMask);
@@ -47,7 +48,7 @@ private:
   unsigned int IPToNum(std::string ip);
 
   void startAllServers();
-  void startServer(std::string ip, int port);
+  void startSingleServer(std::string ip, int port);
 
   ServerConfig getServerConfig(int serverFd);
 
