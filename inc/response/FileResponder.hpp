@@ -1,5 +1,6 @@
 #pragma once
 #include "parser_config/ServerConfig.hpp"
+#include "response/HttpResponse.hpp"
 #include <string>
 
 class HttpRequest;

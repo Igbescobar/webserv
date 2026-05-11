@@ -48,3 +48,7 @@ t_state HttpRequest::getState() { return state; }
 int HttpRequest::getErrorCode() { return errorCode; }
 
 std::string HttpRequest::getRequest() { return buf; }
+
+std::string HttpRequest::getUri() const { return "/"; }
+
+std::string HttpRequest::getMethod() const { return "GET"; }

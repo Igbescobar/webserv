@@ -50,7 +50,6 @@ bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
 bool ResponseHandler::handleRedirect(const LocationConfig *location,
                                      HttpResponse &response) const {
   if (location != NULL && !location->getReturnTarget().empty()) {
-    HttpResponse response;
     response.setStatusCode(301);
     response.setHeader("Location", location->getReturnTarget());
     return true;

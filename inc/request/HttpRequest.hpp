@@ -19,7 +19,7 @@ private:
 public:
   HttpRequest();
   HttpRequest(ServerConfig serverConfig);
-  ~HttpRequest();
+  virtual ~HttpRequest();
   HttpRequest(const HttpRequest &other);
   HttpRequest &operator=(const HttpRequest &other);
 
@@ -32,4 +32,7 @@ public:
   ServerConfig getServerConfig();
 
   std::string getRequest();
+
+  virtual std::string getUri() const;
+  virtual std::string getMethod() const;
 };
