@@ -3,6 +3,8 @@
 #include <iostream>
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
+#include "response/HttpResponse.hpp"
 #include <cerrno>
 #include <cstring>
 #include <sys/socket.h>
@@ -10,6 +12,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <sstream>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -82,11 +85,10 @@ void Server::handle_server(int fd) {
   if (new_socket < 0)
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
-	non_blocking(new_socket);
-	//read_map.count(1)?std::cout<<"Existe\n": std::cout<<"No existe\n";
-	read_map.erase(new_socket);
-	epoll_read(new_socket);
-	return;
+  non_blocking(new_socket);
+  requestMap[new_socket] = HttpRequest(getServerConfig(fd));
+  epoll_read(new_socket);
+  return;
 }
 
 void Server::handle_client(int fd, uint32_t events) {
@@ -99,71 +101,58 @@ void Server::handle_client(int fd, uint32_t events) {
 }
 
 void Server::client_read(int fd) {
-	char buffer[BUF_SIZE + 1];
-	int bytes_read;
-	static std::string local_read_map;
+  char buffer[BUF_SIZE + 1];
+  int bytes_read;
+  static std::string local_read_map;
 
-	bytes_read = read(fd, buffer, BUF_SIZE);
-	if (bytes_read <= 0) {
-		epoll_remove(fd);
-		read_map.erase(fd);
-		close(fd);
-		return;
-	}
-	buffer[bytes_read] = '\0';
-	std::string string_buffer = std::string(buffer);
-	local_read_map += string_buffer;
-	std::cout<<"LOCAL READ MAP: \n"<<local_read_map<<"\n";
-	std::cout << "done!\n";
-	std::string s(local_read_map);
-	//TODO: Request parsing starting here
-	std::cout<<"-----PARSING STARTING HERE-----"<<std::endl;
-	try
-	{
-		HttpRequest request(buffer, this->getGlobalConfig().serverConfigs[fd]);
-		std::cout<<"Correct request"<<"\n";
-	}
-	catch(const HttpRequest::HttpRequestException &e)
-	{
-		std::string response;
-		if (e.code() == 400)
-		{
-			response = e.msg();
-			std::cout<<e.msg()<<"\n";
-		}
-		else if (e.code() == 405)
-		{
-			response = e.msg();
-			std::cout<<e.msg()<<std::endl;
-		}
-		else if (e.code() == 505)
-		{
-			response = e.msg();
-			std::cout<<e.msg()<<"\n";
-		}
-	}
-	read_map.erase(fd);
+  bytes_read = read(fd, buffer, BUF_SIZE);
+  if (bytes_read <= 0) {
+    epoll_remove(fd);
+    requestMap.erase(fd);
+    close(fd);
+    return;
+  }
+
+  buffer[bytes_read] = '\0';
+  requestMap[fd].append(buffer);
+
+  switch (requestMap[fd].getState()) {
+  case INCOMPLETE:
+    return;
+  case COMPLETE:
+    responseMap[fd] =
+        HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
+    break;
+  case ERROR:
+    responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
+                                   requestMap[fd].getErrorCode());
+    break;
+  default:
+    throw std::runtime_error("undefined t_state value");
+  }
+
+  requestMap.erase(fd);
+
+  epoll_write(fd);
 }
 
 void Server::client_write(int fd) {
-	int bytes_written;
+  int bytes_written = write(fd, responseMap[fd].getResponse().c_str(),
+                            responseMap[fd].getResponse().size());
 
-	if (write_map[fd].empty())
-		write_map[fd] = RESPONSE;
+  if (bytes_written <= 0) {
+    epoll_remove(fd);
+    responseMap.erase(fd);
+    close(fd);
+  }
 
-	bytes_written = write(fd, write_map[fd].c_str(), write_map[fd].size());
-	if (bytes_written <= 0) {
-		epoll_remove(fd);
-		write_map.erase(fd);
-		close(fd);
-	}
+  responseMap[fd].erase(bytes_written);
 
-	write_map[fd].erase(0, bytes_written);
-	if (write_map[fd].empty()) {
-		epoll_remove(fd);
-		write_map.erase(fd);
-		close(fd);
-	}
+  if (responseMap[fd].empty()) {
+    epoll_remove(fd);
+    responseMap.erase(fd);
+    close(fd);
+  }
 }
 
 int Server::numListeningSockets() {
@@ -185,7 +174,25 @@ unsigned int Server::IPToNum(std::string ip) {
   return a << 24 | b << 16 | c << 8 | d;
 }
 
-CongifParser	Server::getGlobalConfig()
-{
-	return this->globalConfig;
+void Server::printServersFds() {
+  for (size_t i = 0; i < servers.size(); i++) {
+    std::cout << servers[i] << " ";
+  }
+  std::cout << std::endl;
+}
+
+ServerConfig Server::getServerConfig(int server_fd) {
+  const ServerConfig *serverConfigPtr;
+  int idx = 0;
+
+  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
+    serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
+    for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
+      if (server_fd == servers[idx]) {
+        return *serverConfigPtr;
+      }
+      idx++;
+    }
+  }
+  throw std::runtime_error("ServerConfig not found");
 }
