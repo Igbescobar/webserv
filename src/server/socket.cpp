@@ -1,23 +1,24 @@
 #include "server/Server.hpp"
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <stdexcept>
 #include <sys/socket.h>
 
-int Server::socket_create() {
+int Server::socketCreate() {
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0)
     throw std::runtime_error("socket: " + std::string(strerror(errno)));
 
   int opt = 1;
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-    throw std::runtime_error("setcokopt: " + std::string(strerror(errno)));
+    throw std::runtime_error("setsokopt: " + std::string(strerror(errno)));
 
   return fd;
 }
 
-void Server::socket_bind(int fd, std::string ip, int port) {
+void Server::socketBind(int fd, std::string ip, int port) {
   struct sockaddr_in addr;
   memset((char *)&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -27,7 +28,12 @@ void Server::socket_bind(int fd, std::string ip, int port) {
     throw std::runtime_error("bind: " + std::string(strerror(errno)));
 }
 
-void Server::socket_listen(int fd) {
+void Server::socketListen(int fd) {
   if (listen(fd, MAX_CONNECTIONS) < 0)
     throw std::runtime_error("listen: " + std::string(strerror(errno)));
+}
+
+void Server::setNonBlocking(int fd) {
+  if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
+    throw std::runtime_error("fcntl: " + std::string(strerror(errno)));
 }

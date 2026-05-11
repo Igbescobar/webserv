@@ -1,0 +1,11 @@
+TODO:
+  clean up resources: fd, memory (no leaks)
+  ctrl-c safe exit without leaks
+  error handling
+    clean up resources
+    do not stop if max open files reached
+    control timeout request (timestamp in HttpRequest/HttpResponse?)
+    control request too large (HttpRequest parsing?)
+
+EXTRA:
+  rename parse/config/ to parse_config/

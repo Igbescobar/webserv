@@ -13,10 +13,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
-  epoll_create();
-  startAllServers();
-}
+Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {}
+
+Server::~Server() {}
 
 void Server::startAllServers() {
   const ServerConfig *serverConfigPtr;
@@ -30,48 +29,40 @@ void Server::startAllServers() {
 }
 
 void Server::startServer(std::string ip, int port) {
-  servers.push_back(socket_create());
+  serverFds.push_back(socketCreate());
 
-  int last = servers.size() - 1;
+  int last = serverFds.size() - 1;
 
-  non_blocking(servers[last]);
-  socket_bind(servers[last], ip, port);
-  socket_listen(servers[last]);
-  epoll_read(servers[last]);
-}
-
-Server::~Server() {}
-
-void Server::non_blocking(int fd) {
-  if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
-    throw std::runtime_error("fcntl: " + std::string(strerror(errno)));
+  setNonBlocking(serverFds[last]);
+  socketBind(serverFds[last], ip, port);
+  socketListen(serverFds[last]);
+  epollAddRead(serverFds[last]);
 }
 
 void Server::run() {
+  epollCreate();
+  startAllServers();
   while (true) {
-    int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-    if (num_events < 0)
-      throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
-    handle_events(num_events);
+    handleEvents(epollWait());
   }
 }
 
-void Server::handle_events(int n) {
+void Server::handleEvents(int n) {
   for (int i = 0; i < n; i++)
-    handle_event(events[i].data.fd, events[i].events);
+    handleEvent(epollEvents[i].data.fd, epollEvents[i].events);
 }
 
-void Server::handle_event(int fd, uint32_t events) {
-  for (size_t i = 0; i < servers.size(); i++) {
-    if (fd == servers[i]) {
-      handle_server(servers[i]);
+void Server::handleEvent(int fd, uint32_t eventsMask) {
+  for (size_t i = 0; i < serverFds.size(); i++) {
+    if (fd == serverFds[i]) {
+      handleServer(serverFds[i]);
       return;
     }
   }
-  handle_client(fd, events);
+  handleClient(fd, eventsMask);
 }
 
-void Server::handle_server(int fd) {
+void Server::handleServer(int fd) {
   int new_socket;
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
@@ -80,26 +71,26 @@ void Server::handle_server(int fd) {
   if (new_socket < 0)
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
-  non_blocking(new_socket);
+  setNonBlocking(new_socket);
   requestMap[new_socket] = HttpRequest(getServerConfig(fd));
-  epoll_read(new_socket);
+  epollAddRead(new_socket);
   return;
 }
 
-void Server::handle_client(int fd, uint32_t events) {
-  if (events & EPOLLIN)
-    client_read(fd);
-  else if (events & EPOLLOUT)
-    client_write(fd);
+void Server::handleClient(int fd, uint32_t eventsMask) {
+  if (eventsMask & EPOLLIN)
+    clientRead(fd);
+  else if (eventsMask & EPOLLOUT)
+    clientWrite(fd);
 }
 
-void Server::client_read(int fd) {
+void Server::clientRead(int fd) {
   char buffer[BUF_SIZE + 1];
   int bytes_read;
 
   bytes_read = read(fd, buffer, BUF_SIZE);
   if (bytes_read <= 0) {
-    epoll_remove(fd);
+    epollRemove(fd);
     requestMap.erase(fd);
     close(fd);
     return;
@@ -125,15 +116,15 @@ void Server::client_read(int fd) {
 
   requestMap.erase(fd);
 
-  epoll_write(fd);
+  epollModWrite(fd);
 }
 
-void Server::client_write(int fd) {
+void Server::clientWrite(int fd) {
   int bytes_written = write(fd, responseMap[fd].getResponse().c_str(),
                             responseMap[fd].getResponse().size());
 
   if (bytes_written <= 0) {
-    epoll_remove(fd);
+    epollRemove(fd);
     responseMap.erase(fd);
     close(fd);
   }
@@ -141,7 +132,7 @@ void Server::client_write(int fd) {
   responseMap[fd].erase(bytes_written);
 
   if (responseMap[fd].empty()) {
-    epoll_remove(fd);
+    epollRemove(fd);
     responseMap.erase(fd);
     close(fd);
   }
@@ -167,20 +158,20 @@ unsigned int Server::IPToNum(std::string ip) {
 }
 
 void Server::printServersFds() {
-  for (size_t i = 0; i < servers.size(); i++) {
-    std::cout << servers[i] << " ";
+  for (size_t i = 0; i < serverFds.size(); i++) {
+    std::cout << serverFds[i] << " ";
   }
   std::cout << std::endl;
 }
 
-ServerConfig Server::getServerConfig(int server_fd) {
+ServerConfig Server::getServerConfig(int serverFd) {
   const ServerConfig *serverConfigPtr;
   int idx = 0;
 
   for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
     serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
     for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
-      if (server_fd == servers[idx]) {
+      if (serverFd == serverFds[idx]) {
         return *serverConfigPtr;
       }
       idx++;
