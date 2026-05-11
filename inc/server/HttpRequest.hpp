@@ -25,7 +25,14 @@ private:
   void parseRawData(const std::string &rawData);
 
 public:
-  HttpRequest(const std::string &rawData);
+  enum e_state
+  {
+	  INCOMPLETE,
+	  COMPLETE,
+	  ERROR
+  };
+  HttpRequest();
+  HttpRequest(const std::string &buffer, ServerConfig serverConfig);
   ~HttpRequest();
   void	parseFirstLineValues(const std::string &header);
   void	parseHeaders(const std::string &header, size_t pos);
@@ -39,6 +46,7 @@ public:
   std::string getHeader(const std::string &key) const;
   std::map<std::string, std::string> getHeaders() const;
   std::string getBody() const;
+  e_state getState();
   class HttpRequestException: public std::exception
   {
 	private:

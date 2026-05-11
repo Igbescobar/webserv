@@ -1,19 +1,35 @@
 #include <iostream>
 #include "server/HttpRequest.hpp"
+#include "ServerConfig.hpp"
 
 //HttpRequest::HttpRequest(): method(method), uri(uri), version(version), headers(headers), body(body)
 //{}
 
-HttpRequest::HttpRequest(const std::string &rawData)
+HttpRequest::HttpRequest(const std::string &buffer, ServerConfig serverConfig)
 {
 	//std::cout<<"HtttpRequest constructor called"<<std::endl;
-	parseRawData(rawData);
+	parseRawData(buffer);
 }
 
 HttpRequest::~HttpRequest()
 {
 	//std::cout<<"Http Destructor called"<<std::endl;
 }
+
+void HttpRequest::append(std::string chunk)
+{
+	this->read_map += chunk;
+}
+
+e_state HttpRequest::getState()
+{
+	return e_state;
+}
+
+/*void	checkIfComplete(const std::string buffer)
+{
+	if(buffer.find()
+}*/
 
 void	checkFind(size_t parameter, std::string message, int code)
 {
@@ -42,8 +58,7 @@ void	HttpRequest::checkRequestHeaders()
 const std::string	extractString(const std::string &Data,const std::string &delimeter)
 {
 	size_t	stringEnd = Data.find(delimeter);
-	if(stringEnd == std::string::npos)
-		throw HttpRequest::HttpRequestException("Data not correctly extracted", 400);
+	checkFind(stringEnd, "Data not correctly extracted", 400);
 	return Data.substr(0, stringEnd);
 }
 

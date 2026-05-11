@@ -65,6 +65,6 @@ private:
 public:
   Server(const ConfigParser &conf);
   ~Server();
-
+  ConfigParser	getGlobalConfig(); 
   void run();
 };

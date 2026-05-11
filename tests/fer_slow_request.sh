@@ -7,7 +7,9 @@
   # Headers uno por uno
   printf "Host: localhost:8080\r\n"
   sleep 1
-  printf "Transfer-Encoding: chunked\r\n"
+  printf "Transfer-Enc"
+  sleep 1
+  printf "oding: chunked\r\n"
   sleep 1
   printf "\r\n"
   sleep 1

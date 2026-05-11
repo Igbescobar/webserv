@@ -101,6 +101,7 @@ void Server::handle_client(int fd, uint32_t events) {
 void Server::client_read(int fd) {
 	char buffer[BUF_SIZE + 1];
 	int bytes_read;
+	static std::string local_read_map;
 
 	bytes_read = read(fd, buffer, BUF_SIZE);
 	if (bytes_read <= 0) {
@@ -109,23 +110,17 @@ void Server::client_read(int fd) {
 		close(fd);
 		return;
 	}
-
 	buffer[bytes_read] = '\0';
-	read_map[fd] += buffer;
-	std::cout<<"--------read_map printing starting here------\n";
-	std::cout << "\"" << read_map[fd] << "\"";
-	std::cout<<"--------read_map printing ending here------\n";
-	size_t pos = read_map[fd].find(DELIMETER);
-	if (pos == std::string::npos)
-		return;
-
+	std::string string_buffer = std::string(buffer);
+	local_read_map += string_buffer;
+	std::cout<<"LOCAL READ MAP: \n"<<local_read_map<<"\n";
 	std::cout << "done!\n";
-	std::string s(read_map[fd]);
+	std::string s(local_read_map);
 	//TODO: Request parsing starting here
 	std::cout<<"-----PARSING STARTING HERE-----"<<std::endl;
 	try
 	{
-		HttpRequest request(s);
+		HttpRequest request(buffer, this->getGlobalConfig().serverConfigs[fd]);
 		std::cout<<"Correct request"<<"\n";
 	}
 	catch(const HttpRequest::HttpRequestException &e)
@@ -188,4 +183,9 @@ unsigned int Server::IPToNum(std::string ip) {
   ss >> a >> dot >> b >> dot >> c >> dot >> d;
 
   return a << 24 | b << 16 | c << 8 | d;
+}
+
+CongifParser	Server::getGlobalConfig()
+{
+	return this->globalConfig;
 }
