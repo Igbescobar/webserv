@@ -6,6 +6,7 @@ TODO:
     do not stop if max open files reached
     control timeout request (timestamp in HttpRequest/HttpResponse?)
     control request too large (HttpRequest parsing?)
+  what happens if client closes connection in the middle?
 
 EXTRA:
   rename parse/config/ to parse_config/
