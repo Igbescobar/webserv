@@ -1,6 +1,7 @@
 #include "server/Epoll.hpp"
 #include <cerrno>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <sys/epoll.h>
 #include <unistd.h>
