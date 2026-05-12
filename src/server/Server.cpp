@@ -3,19 +3,26 @@
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "server/Socket.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
-#include <sstream>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
 
+using namespace std;
+
 Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {}
 
-Server::~Server() {}
+Server::~Server() {
+  for (size_t i = 0; i < Sockets.size(); i++) {
+    delete Sockets[i];
+  }
+  Sockets.clear();
+}
 
 void Server::startAllServers() {
   const ServerConfig *serverConfigPtr;
@@ -30,14 +37,8 @@ void Server::startAllServers() {
 }
 
 void Server::startSingleServer(std::string ip, int port) {
-  serverFds.push_back(socketCreate());
-
-  int last = serverFds.size() - 1;
-
-  setNonBlocking(serverFds[last]);
-  socketBind(serverFds[last], ip, port);
-  socketListen(serverFds[last]);
-  epoll.addRead(serverFds[last]);
+  Sockets.push_back(new Socket(ip, port));
+  epoll.addRead(Sockets.back()->getFd());
 }
 
 void Server::run() {
@@ -53,9 +54,9 @@ void Server::handleEvents(int n) {
 }
 
 void Server::handleSingleEvent(int fd, uint32_t eventsMask) {
-  for (size_t i = 0; i < serverFds.size(); i++) {
-    if (fd == serverFds[i]) {
-      handleServer(serverFds[i]);
+  for (size_t i = 0; i < Sockets.size(); i++) {
+    if (fd == Sockets[i]->getFd()) {
+      handleServer(Sockets[i]->getFd());
       return;
     }
   }
@@ -71,7 +72,7 @@ void Server::handleServer(int fd) {
   if (new_socket < 0)
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
-  setNonBlocking(new_socket);
+  Socket::setNonBlocking(new_socket);
   requestMap[new_socket] = HttpRequest(getServerConfig(fd));
   epoll.addRead(new_socket);
   return;
@@ -138,32 +139,6 @@ void Server::clientWrite(int fd) {
   }
 }
 
-int Server::numListeningSockets() {
-  int cnt = 0;
-
-  for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++)
-    cnt += globalConfig.getServerConfigs()[i].getIPs().size();
-
-  return cnt;
-}
-
-unsigned int Server::IPToNum(std::string ip) {
-  std::stringstream ss(ip);
-  unsigned int a, b, c, d;
-  char dot;
-
-  ss >> a >> dot >> b >> dot >> c >> dot >> d;
-
-  return a << 24 | b << 16 | c << 8 | d;
-}
-
-void Server::printServersFds() {
-  for (size_t i = 0; i < serverFds.size(); i++) {
-    std::cout << serverFds[i] << " ";
-  }
-  std::cout << std::endl;
-}
-
 ServerConfig Server::getServerConfig(int serverFd) {
   const ServerConfig *serverConfigPtr;
   int idx = 0;
@@ -171,7 +146,7 @@ ServerConfig Server::getServerConfig(int serverFd) {
   for (size_t i = 0; i < globalConfig.getServerConfigs().size(); i++) {
     serverConfigPtr = &(globalConfig.getServerConfigs()[i]);
     for (size_t j = 0; j < serverConfigPtr->getIPs().size(); j++) {
-      if (serverFd == serverFds[idx]) {
+      if (serverFd == Sockets[idx]->getFd()) {
         return *serverConfigPtr;
       }
       idx++;
