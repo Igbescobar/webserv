@@ -74,7 +74,7 @@ std::string HttpResponse::toString() const {
 
   std::map<std::string, std::string>::const_iterator it;
   for (it = this->headers.begin(); it != this->headers.end(); it++)
-    responseStream << it->first << ":" << it->second << "\r\n";
+    responseStream << it->first << ": " << it->second << "\r\n";
 
   responseStream << "\r\n";
 

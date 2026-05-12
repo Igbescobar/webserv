@@ -13,13 +13,15 @@ private:
   std::string buf;
   t_state state;
   int errorCode;
+  std::string method;
+  std::string uri;
 
   void updateState();
 
 public:
   HttpRequest();
   HttpRequest(ServerConfig serverConfig);
-  virtual ~HttpRequest();
+  ~HttpRequest();
   HttpRequest(const HttpRequest &other);
   HttpRequest &operator=(const HttpRequest &other);
 
@@ -29,10 +31,10 @@ public:
 
   int getErrorCode();
 
-  ServerConfig getServerConfig();
+  const ServerConfig &getServerConfig() const;
 
   std::string getRequest();
 
-  virtual std::string getUri() const;
-  virtual std::string getMethod() const;
+  std::string getUri() const;
+  std::string getMethod() const;
 };

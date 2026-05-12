@@ -126,6 +126,8 @@ HttpResponse FileResponder::buildFileResponse(const std::string &filePath) {
   HttpResponse response;
   response.setStatusCode(200);
   response.setHeader("Content-Type", ResponseIO::guessContentType(filePath));
+  response.setHeader("Server", "webserv/1.0");
+  response.setHeader("Date", ResponseIO::getCurrentDate());
   response.setBody(content);
   return response;
 }

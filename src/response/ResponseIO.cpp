@@ -42,7 +42,7 @@ std::string ResponseIO::guessContentType(const std::string &path) {
         static_cast<char>(std::tolower(static_cast<unsigned char>(ext[i])));
 
   if (ext == "html" || ext == "htm")
-    return "text/html";
+    return "text/html; charset=UTF-8";
   if (ext == "css")
     return "text/css";
   if (ext == "js")
@@ -54,4 +54,18 @@ std::string ResponseIO::guessContentType(const std::string &path) {
   if (ext == "txt")
     return "text/plain";
   return "application/octet-stream";
+}
+
+std::string ResponseIO::getCurrentDate() {
+  char buffer[100];
+  time_t rawTime;
+  struct tm *timeInfo;
+
+  time(&rawTime);
+
+  timeInfo = gmtime(&rawTime);
+
+  strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", timeInfo);
+
+  return std::string(buffer);
 }
