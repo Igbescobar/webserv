@@ -13,13 +13,11 @@
 
 #define BUF_SIZE 4096
 
-using namespace std;
-
 class Server {
 private:
-  vector<Socket *> Sockets;
-  map<int, HttpRequest> requestMap;
-  map<int, HttpResponse> responseMap;
+  std::vector<Socket *> Sockets;
+  std::map<int, HttpRequest> requestMap;
+  std::map<int, HttpResponse> responseMap;
   const ConfigParser &globalConfig;
   Epoll epoll;
 
@@ -33,7 +31,7 @@ private:
   void clientWrite(int fd);
 
   void startAllServers();
-  void startSingleServer(string ip, int port);
+  void startSingleServer(std::string ip, int port);
 
   ServerConfig getServerConfig(int serverFd);
 

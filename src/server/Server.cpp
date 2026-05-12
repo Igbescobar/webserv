@@ -36,7 +36,7 @@ void Server::startAllServers() {
   }
 }
 
-void Server::startSingleServer(string ip, int port) {
+void Server::startSingleServer(std::string ip, int port) {
   Sockets.push_back(new Socket(ip, port));
   epoll.addRead(Sockets.back()->getFd());
 }
@@ -70,7 +70,7 @@ void Server::handleServer(int fd) {
 
   new_socket = accept(fd, (struct sockaddr *)&addr, &addr_len);
   if (new_socket < 0)
-    throw runtime_error("accept: " + string(strerror(errno)));
+    throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
   Socket::setNonBlocking(new_socket);
   requestMap[new_socket] = HttpRequest(getServerConfig(fd));
@@ -112,7 +112,7 @@ void Server::clientRead(int fd) {
                                    requestMap[fd].getErrorCode());
     break;
   default:
-    throw runtime_error("undefined t_state value");
+    throw std::runtime_error("undefined t_state value");
   }
 
   requestMap.erase(fd);
@@ -152,5 +152,5 @@ ServerConfig Server::getServerConfig(int serverFd) {
       idx++;
     }
   }
-  throw runtime_error("ServerConfig not found");
+  throw std::runtime_error("ServerConfig not found");
 }

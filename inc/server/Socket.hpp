@@ -9,17 +9,17 @@ using namespace std;
 class Socket {
 private:
   int fd;
-  string ip;
+  std::string ip;
   int port;
 
   int socketCreate();
-  void socketBind(int fd, string ip, int port);
+  void socketBind(int fd, std::string ip, int port);
   void socketListen(int fd);
-  unsigned int IPToNum(string ip);
+  unsigned int IPToNum(std::string ip);
 
 public:
   Socket();
-  Socket(string ip, int port);
+  Socket(std::string ip, int port);
   Socket(const Socket &other);
   Socket &operator=(const Socket &other);
   ~Socket();
