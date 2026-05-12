@@ -19,6 +19,7 @@ private:
   std::string version;
   std::map<std::string, std::string> headers;
   std::string body;
+  size_t headerStart;
   void updateState();
 
 public:
@@ -30,8 +31,9 @@ public:
 
   void append(std::string chunk);
 
-  void parseRawData(std::string chunck);
-  void	parseFirstLineValues(const std::string &header);
+  void  parse(std::string chunck);
+  void  parseRequestLine();
+  void	parseRequestLineValues(const std::string &header);
   void	parseHeaders(const std::string &header, size_t pos);
   void	parseHeaderLine(const std::string &headerLine);
   void	parseBody(const std::string &rawData);
@@ -39,8 +41,6 @@ public:
   void	checkRequestHeaders();
   void  checkIfLineComplete(std::string chunck);
   void	printState();
-  void	checkFind(size_t parameter);
-  const std::string	extractString(const std::string &Data, const std::string &delimeter);
 
   class HttpRequestException: public std::exception
   {

@@ -34,23 +34,11 @@ void HttpRequest::append(std::string chunk) {
 
 void HttpRequest::updateState() {
   size_t pos = buf.find(DELIMETER);
-  std::cout<<"VALOR DE BUF EN EL MOMENTO DE LA COMPROBACION DE RNRN: "<<buf<<"\n";
-  std::cout<<"VALOR DE POS EN EL MOEMNTO DE LA COMPROBACIOND DE RNRN: "<<pos<<"\n";
   if (pos == std::string::npos) {
     state = INCOMPLETE;
     return;
   }
   state = COMPLETE;
-  printState();
-}
-
-void	HttpRequest::checkFind(size_t parameter)
-{
-	if(parameter == std::string::npos)
-	{
-		std::cout<<"AQUIIIIIIIIIII\n";
-		state = ERROR;
-	}
 }
 
 void	HttpRequest::checkRequestLine()
@@ -64,37 +52,22 @@ void	HttpRequest::checkRequestLine()
 void	HttpRequest::checkRequestHeaders()
 {
 	if (getHeader("host").empty())
-	{
-		std::cout<<"AQUI\n";
 		state = ERROR;
-	}
 	const std::string &cl = getHeader("content-length");
-	std::cout<<"CL : "<<cl<<"\n";
 	for (size_t i = 0; i < cl.size(); i++)
 		if (!isdigit(cl[i]))
-		{
-			std::cout<<"CL[i] "<<cl[i]<<"\n";
-			std::cout<<"AQUI1\n";
 			state = ERROR;
-		}
 }
 
-const std::string	HttpRequest::extractString(const std::string &Data,const std::string &delimeter)
+void	HttpRequest::parseRequestLineValues(const std::string &requestLine)
 {
-	size_t	stringEnd = Data.find(delimeter);
-	checkFind(stringEnd);
-	return Data.substr(0, stringEnd);
-}
-
-void	HttpRequest::parseFirstLineValues(const std::string &requestLine)
-{
-	size_t firstLineFirstSpace = requestLine.find(" ");
-	checkFind(firstLineFirstSpace);
-	size_t firstLineSecondSpace = requestLine.find(" ", firstLineFirstSpace + 1);
-	checkFind(firstLineSecondSpace);
-	this->method = requestLine.substr(0, firstLineFirstSpace);
-	this->uri = requestLine.substr(firstLineFirstSpace + 1, firstLineSecondSpace - firstLineFirstSpace - 1);
-	this->version = requestLine.substr(firstLineSecondSpace + 1);
+	size_t first = requestLine.find(" ");
+	if (first == std::string::npos) { state = ERROR; return; }
+	size_t second = requestLine.find(" ", first + 1);
+	if (second == std::string::npos) { state = ERROR; return; }
+	method = requestLine.substr(0, first);
+	uri = requestLine.substr(first + 1, second - first - 1);
+	version = requestLine.substr(second + 1);
 	checkRequestLine();
 }
 
@@ -103,12 +76,11 @@ void	HttpRequest::parseHeaderLine(const std::string &headerLine)
 	if(headerLine == "\r\n" || headerLine.empty())
 		return;
 	size_t colonPos = headerLine.find(":");
+	if(colonPos == std::string::npos)
+		return;
 	std::string key = headerLine.substr(0, colonPos);
 	if(key.empty() || key.find(' ') != std::string::npos || key.find('\t') != std::string::npos)
-	{
-		std::cout<<"VACIO O CON ESPACIOS\n";
 		state = ERROR;
-	}
 	for(size_t i = 0; i < key.size(); i++)
 		key[i] = tolower(key[i]);
 	size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
@@ -117,8 +89,6 @@ void	HttpRequest::parseHeaderLine(const std::string &headerLine)
 	if(end != std::string::npos)
 		value = value.substr(0, end + 1);
 	this->headers[key] = value;
-	std::cout<<"KEY : "<<key<<"\n VALUE :"<<value<<"\n";
-	checkRequestHeaders();
 }
 
 void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
@@ -130,10 +100,11 @@ void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
 		size_t lineEnd = header.find("\r\n", pos);
 		if(lineEnd == std::string::npos)
 			lineEnd = header.length();
-		std::cout<<"----------------------------\n";
+		std::cout<<"\033[31m"<<"----------------------------\n"<<"\033[0m";
 		parseHeaderLine(header.substr(pos, (lineEnd + 2) - pos));
 		pos = lineEnd + 2;
 	}
+	checkRequestHeaders();
 }
 
 void HttpRequest::parseBody(const std::string &rawData)
@@ -143,19 +114,27 @@ void HttpRequest::parseBody(const std::string &rawData)
 	this->body = rawData.substr(bodyStart);
 }
 
-void	HttpRequest::checkIfLineComplete(std::string chunk)
+
+void HttpRequest::parseRequestLine()
 {
+    size_t end = buf.find("\r\n");
+    if (end == std::string::npos) { state = ERROR; return; }
+    parseRequestLineValues(buf.substr(0, end));
+    headerStart = end + 2; // guarda la posición para parseHeaders
+}
+
+void	HttpRequest::parse(std::string chunk)
+{
+	std::cout<<"\033[32m"<<"------------------------------------------\n"<<"\033[0m";
 	append(chunk);
-	size_t endLine = buf.find("\r\n");
-	if(endLine == std::string::npos)
+	if(state != COMPLETE)
 		return;
-	std::cout<<"CHUNK: "<<chunk<<"\n";
-	std::cout<<"BUF: "<<buf<<"\n";
-	size_t pos = 0;
-	std::string headerLine = buf.substr(pos, endLine);
-	parseFirstLineValues(headerLine);
-	pos = endLine + 2;
-	parseHeaders(buf, pos);
+	parseRequestLine();
+	if(state == ERROR)
+		return;
+	parseHeaders(buf, headerStart);
+	if(state == ERROR)
+		return;
 }
 
 void	HttpRequest::printState()
@@ -166,13 +145,6 @@ void	HttpRequest::printState()
 		std::cout<<"COMPLETE\n";
 	else
 		std::cout<<"ERROR\n";
-}
-
-void	HttpRequest::parseRawData(std::string chunk)
-{
-	//TODO Subsitute rawData logic for buffer logic
-	std::cout<<"------------------------------------------\n";
-	checkIfLineComplete(chunk);
 }
 
 std::string	HttpRequest::getMethod() const
