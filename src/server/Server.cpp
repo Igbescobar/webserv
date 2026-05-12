@@ -1,5 +1,4 @@
 #include "server/Server.hpp"
-#include "server/HttpRequest.hpp"
 #include <iostream>
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
@@ -114,25 +113,28 @@ void Server::client_read(int fd) {
   }
 
   buffer[bytes_read] = '\0';
-  requestMap[fd].append(buffer);
-
+  //requestMap[fd].append(buffer);
+  //std::cout<<"ENTRA AQUI TAMBIEN\n";
+  requestMap[fd].parseRawData(buffer);
   switch (requestMap[fd].getState()) {
   case INCOMPLETE:
+    requestMap[fd].printState();
     return;
   case COMPLETE:
     responseMap[fd] =
         HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
+    requestMap[fd].printState();
     break;
   case ERROR:
     responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
                                    requestMap[fd].getErrorCode());
+    requestMap[fd].printState();
     break;
   default:
     throw std::runtime_error("undefined t_state value");
   }
 
   requestMap.erase(fd);
-
   epoll_write(fd);
 }
 
