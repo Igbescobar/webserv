@@ -21,10 +21,6 @@ private:
   void handleSingleEvent(int fd, uint32_t eventsMask);
 
   void handleServer(int serverFd);
-  void handleClient(int fd, uint32_t eventsMask);
-
-  void clientRead(int fd);
-  void clientWrite(int fd);
 
   void startAllServers();
   void startSingleServer(std::string ip, int port);
