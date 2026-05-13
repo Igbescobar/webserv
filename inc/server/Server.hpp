@@ -1,65 +1,31 @@
 #pragma once
 
-#include "parser_config/ConfigParser.hpp"
-#include "parser_config/ServerConfig.hpp"
-#include "request/HttpRequest.hpp"
-#include "response/HttpResponse.hpp"
+#include "parser/config/ConfigParser.hpp"
+#include "parser/config/ServerConfig.hpp"
+#include "server/Client.hpp"
+#include "server/Epoll.hpp"
+#include "server/Socket.hpp"
 #include <map>
 #include <string>
 #include <sys/epoll.h>
 #include <vector>
 
-#define MAX_CONNECTIONS 10
-#define MAX_EVENTS 10
-#define BUF_SIZE 4096
-
-// TODO:
-// cleanup resources: fd, etc (do not leak fd)
-// ctrl-c safe exit
-// error handling
-// control never-ending request
-// control timeout request
-// control request too large
-// do not stop if max open files reached
-
 class Server {
 private:
-  std::vector<int> servers;
-  int epoll_fd;
-  struct epoll_event events[MAX_EVENTS];
-  std::map<int, HttpRequest> requestMap;
-  std::map<int, HttpResponse> responseMap;
-  ConfigParser globalConfig;
+  std::vector<Socket *> Sockets;
+  std::map<int, Client *> clientMap;
+  const ConfigParser &globalConfig;
+  Epoll epoll;
 
-  int socket_create();
-  void socket_bind(int fd, std::string ip, int port);
-  void socket_listen(int fd);
+  void handleEvents(int n);
+  void handleSingleEvent(int fd, uint32_t eventsMask);
 
-  void handle_event(int fd, uint32_t events);
-  void handle_events(int n);
-
-  void handle_server(int fd);
-  void handle_client(int fd, uint32_t events);
-
-  void client_read(int fd);
-  void client_write(int fd);
-
-  void epoll_create();
-  void epoll_read(int fd);
-  void epoll_write(int fd);
-  void epoll_remove(int fd);
-
-  void non_blocking(int fd);
-
-  int numListeningSockets();
-  unsigned int IPToNum(std::string ip);
+  void handleServer(int serverFd);
 
   void startAllServers();
-  void startServer(std::string ip, int port);
+  void startSingleServer(std::string ip, int port);
 
-  ServerConfig getServerConfig(int server_fd);
-
-  void printServersFds();
+  const ServerConfig &getServerConfig(int serverFd) const;
 
 public:
   Server(const ConfigParser &conf);
