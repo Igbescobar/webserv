@@ -7,6 +7,7 @@
 #include "server/Socket.hpp"
 #include <cerrno>
 #include <cstring>
+#include <exception>
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
@@ -21,6 +22,11 @@ Server::~Server() {
     delete Sockets[i];
   }
   Sockets.clear();
+  for (std::map<int, Client *>::iterator it = clientMap.begin();
+       it != clientMap.end(); ++it) {
+    delete it->second;
+  }
+  clientMap.clear();
 }
 
 void Server::startAllServers() {
@@ -54,8 +60,10 @@ void Server::handleEvents(int n) {
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
+    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
       delete clientMap[triggeredFd];
+      clientMap.erase(triggeredFd);
+    }
   } else {
     handleServer(triggeredFd);
   }
@@ -71,7 +79,13 @@ void Server::handleServer(int serverFd) {
   if (clientFd < 0)
     throw std::runtime_error("accept: " + std::string(strerror(errno)));
 
-  clientMap[clientFd] = new Client(clientFd, epoll, getServerConfig(serverFd));
+  try {
+    clientMap[clientFd] =
+        new Client(clientFd, epoll, getServerConfig(serverFd));
+  } catch (std::exception &e) {
+    close(clientFd);
+    throw;
+  }
   return;
 }
 
