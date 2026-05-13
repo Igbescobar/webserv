@@ -1,7 +1,7 @@
 #include "request/HttpRequest.hpp"
 #include "parser_config/ServerConfig.hpp"
-#include <string>
 #include <sstream>
+#include <string>
 
 HttpRequest::HttpRequest() {}
 
@@ -43,16 +43,18 @@ void HttpRequest::updateState() {
     state = INCOMPLETE;
     return;
   }
-  
+
   if (state == INCOMPLETE) {
-      std::istringstream stream(buf);
-      stream >> method >> uri;
+    std::istringstream stream(buf);
+    stream >> method >> uri;
   }
-  
+
   state = COMPLETE;
 }
 
-const ServerConfig& HttpRequest::getServerConfig() const { return serverConfig; }
+const ServerConfig &HttpRequest::getServerConfig() const {
+  return serverConfig;
+}
 
 t_state HttpRequest::getState() { return state; }
 
@@ -63,3 +65,11 @@ std::string HttpRequest::getRequest() { return buf; }
 std::string HttpRequest::getUri() const { return uri; }
 
 std::string HttpRequest::getMethod() const { return method; }
+
+std::string HttpRequest::getBody() const {
+  const std::string delim = "\r\n\r\n";
+  size_t pos = buf.find(delim);
+  if (pos == std::string::npos)
+    return "";
+  return buf.substr(pos + delim.size());
+}

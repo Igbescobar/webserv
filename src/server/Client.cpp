@@ -1,7 +1,8 @@
 #include "server/Client.hpp"
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include "server/Socket.hpp"
 #include <iostream>
 #include <stdexcept>
@@ -40,15 +41,18 @@ bool Client::read(int clientFd) {
   switch (request.getState()) {
   case INCOMPLETE:
     return true;
-  case COMPLETE:
-    responseStr = HttpResponse(serverConfig, request).getResponse();
+  case COMPLETE: {
+    HttpResponse resp = ResponseHandler(serverConfig, request).handle();
+    responseStr = resp.getResponse();
     epoll.modWrite(clientFd);
     return true;
-  case ERROR:
-    responseStr =
-        HttpResponse(serverConfig, request.getErrorCode()).getResponse();
+  }
+  case ERROR: {
+    HttpResponse resp = ResponseHandler(serverConfig, request).handle();
+    responseStr = resp.getResponse();
     epoll.modWrite(clientFd);
     return true;
+  }
   default:
     throw std::runtime_error("unknown request state");
   }

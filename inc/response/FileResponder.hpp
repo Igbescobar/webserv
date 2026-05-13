@@ -1,9 +1,8 @@
 #pragma once
+#include "parser_config/LocationConfig.hpp"
 #include "parser_config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
-#include <string>
-
-class HttpRequest;
 
 class FileResponder {
 public:
@@ -11,7 +10,14 @@ public:
                                 const LocationConfig *location,
                                 const HttpRequest &req);
 
-private:
+  static HttpResponse handlePost(const ServerConfig &config,
+                                 const LocationConfig *location,
+                                 const HttpRequest &req);
+
+  static HttpResponse handleDelete(const ServerConfig &config,
+                                   const LocationConfig *location,
+                                   const HttpRequest &req);
+
   static bool isSafeUri(const std::string &uri);
   static bool isDirectory(const std::string &path);
   static bool isRegularFile(const std::string &path);

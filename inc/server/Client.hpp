@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "server/Epoll.hpp"
 

@@ -31,6 +31,12 @@ HttpResponse ResponseHandler::handle() {
   if (method == "GET")
     return FileResponder::handleGet(config, location, *req);
 
+  if (method == "POST")
+    return FileResponder::handlePost(config, location, *req);
+
+  if (method == "DELETE")
+    return FileResponder::handleDelete(config, location, *req);
+
   return ErrorResponseBuilder::build(config, 405);
 }
 

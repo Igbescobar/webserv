@@ -15,6 +15,7 @@ private:
   int errorCode;
   std::string method;
   std::string uri;
+  std::string body;
 
   void updateState();
 
@@ -37,4 +38,5 @@ public:
 
   std::string getUri() const;
   std::string getMethod() const;
+  std::string getBody() const;
 };
