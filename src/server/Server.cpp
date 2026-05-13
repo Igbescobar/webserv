@@ -86,8 +86,17 @@ void Server::handleServer(int serverFd) {
 
   // TODO: check errno
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
-  if (clientFd < 0)
-    throw std::runtime_error("accept: " + std::string(strerror(errno)));
+  if (clientFd < 0) {
+    switch (errno) {
+    case EMFILE:
+    case ENFILE:
+      std::cout << "fd limit reached" << std::endl;
+    case EAGAIN:
+      return;
+    default:
+      throw std::runtime_error("accept: " + std::string(strerror(errno)));
+    }
+  }
 
   try {
     clientMap[clientFd] =
