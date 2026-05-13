@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <unistd.h>
 
-Client::Client(int clientSocket, Epoll &epoll, ServerConfig serverConfig)
+Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
     : clientFd(clientSocket), epoll(epoll), serverConfig(serverConfig) {
   request = HttpRequest(serverConfig);
   Socket::setNonBlocking(clientSocket);

@@ -29,7 +29,7 @@ private:
   void startAllServers();
   void startSingleServer(std::string ip, int port);
 
-  ServerConfig getServerConfig(int serverFd); // TODO: use reference
+  const ServerConfig &getServerConfig(int serverFd) const;
 
 public:
   Server(const ConfigParser &conf);

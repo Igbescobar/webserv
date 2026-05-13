@@ -75,8 +75,7 @@ void Server::handleServer(int serverFd) {
   return;
 }
 
-// TODO: fix this function
-ServerConfig Server::getServerConfig(int serverFd) {
+const ServerConfig &Server::getServerConfig(int serverFd) const {
   const ServerConfig *serverConfigPtr;
   int idx = 0;
 

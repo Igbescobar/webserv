@@ -10,7 +10,7 @@ class Client {
 private:
   int clientFd;
   Epoll &epoll;
-  ServerConfig serverConfig; // TODO: use reference
+  const ServerConfig &serverConfig;
   HttpRequest request;
   std::string responseStr;
 
@@ -18,7 +18,7 @@ private:
   bool write(int clientFd);
 
 public:
-  Client(int clientSocket, Epoll &epoll, ServerConfig serverConfig);
+  Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig);
   ~Client();
 
   bool handleEvent(uint32_t eventsMask);
