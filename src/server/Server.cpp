@@ -53,9 +53,9 @@ void Server::handleEvents(int n) {
 }
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
-  if (clientMap.find(triggeredFd) != clientMap.end() &&
-      clientMap[triggeredFd]->handle(eventsMask) == CLIENT_DELETE) {
-    delete clientMap[triggeredFd];
+  if (clientMap.find(triggeredFd) != clientMap.end()) {
+    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
+      delete clientMap[triggeredFd];
   } else {
     handleServer(triggeredFd);
   }
@@ -76,7 +76,7 @@ void Server::handleServer(int serverFd) {
 }
 
 // TODO: fix this function
-ServerConfig &Server::getServerConfig(int serverFd) {
+ServerConfig Server::getServerConfig(int serverFd) {
   const ServerConfig *serverConfigPtr;
   int idx = 0;
 
