@@ -3,6 +3,7 @@
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
 #include "server/Socket.hpp"
+#include <ctime>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
@@ -12,11 +13,16 @@ Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
   request = HttpRequest(serverConfig);
   Socket::setNonBlocking(clientSocket);
   epoll.addRead(clientSocket);
+  connectionStart = lastActivity = std::time(NULL);
 }
 
-Client::~Client() { close(clientFd); }
+Client::~Client() {
+  close(clientFd);
+  epoll.remove(clientFd);
+}
 
 bool Client::handleEvent(uint32_t eventsMask) {
+  updateActivity();
   if (eventsMask & EPOLLIN)
     return read(clientFd);
   else if (eventsMask & EPOLLOUT)
@@ -70,4 +76,15 @@ bool Client::write(int clientFd) {
     return false;
   }
   return true;
+}
+
+void Client::updateActivity() { lastActivity = std::time(NULL); }
+
+bool Client::isTimedOut() {
+  time_t currentTime = std::time(NULL);
+  if ((currentTime - lastActivity) > IDLE_LIMIT)
+    return true;
+  if ((currentTime - connectionStart) > ABSOLUTE_LIMIT)
+    return true;
+  return false;
 }

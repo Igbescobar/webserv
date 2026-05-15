@@ -29,6 +29,8 @@ private:
 
   const ServerConfig &getServerConfig(int serverFd) const;
 
+  void sweepTimeouts();
+
 public:
   Server(const ConfigParser &conf);
   ~Server();

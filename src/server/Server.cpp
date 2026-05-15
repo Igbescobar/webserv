@@ -60,6 +60,7 @@ void Server::run() {
   startAllServers();
   while (Server::isRunning) {
     handleEvents(epoll.wait());
+    sweepTimeouts();
   }
 }
 
@@ -84,7 +85,6 @@ void Server::handleServer(int serverFd) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  // TODO: check errno
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
   if (clientFd < 0) {
     switch (errno) {
@@ -122,4 +122,18 @@ const ServerConfig &Server::getServerConfig(int serverFd) const {
     }
   }
   throw std::runtime_error("ServerConfig not found");
+}
+
+void Server::sweepTimeouts() {
+  std::map<int, Client *>::iterator it = clientMap.begin();
+  while (it != clientMap.end()) {
+    Client *client = it->second;
+
+    if (client->isTimedOut()) {
+      delete client;
+      clientMap.erase(it++);
+    } else {
+      ++it;
+    }
+  }
 }
