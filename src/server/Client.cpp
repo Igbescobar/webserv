@@ -14,6 +14,7 @@ Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
   Socket::setNonBlocking(clientSocket);
   epoll.addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
+  requestSize = 0;
 }
 
 Client::~Client() {
@@ -35,8 +36,8 @@ bool Client::read(int clientFd) {
   int bytesRead;
 
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
-  if (bytesRead <= 0) {
-    epoll.remove(clientFd);
+  requestSize += bytesRead;
+  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT) {
     return false;
   }
 
@@ -65,14 +66,12 @@ bool Client::write(int clientFd) {
 
   bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
   if (bytesWritten <= 0) {
-    epoll.remove(clientFd);
     return false;
   }
 
   responseStr.erase(0, bytesWritten);
 
   if (responseStr.empty()) {
-    epoll.remove(clientFd);
     return false;
   }
   return true;
