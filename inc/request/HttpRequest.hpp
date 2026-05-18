@@ -39,4 +39,5 @@ public:
   std::string getUri() const;
   std::string getMethod() const;
   std::string getBody() const;
+  std::string getHeader(const std::string &name) const;
 };

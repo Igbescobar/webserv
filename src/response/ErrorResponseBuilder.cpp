@@ -1,5 +1,6 @@
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseFactory.hpp"
 #include "response/ResponseIO.hpp"
 
 #include <map>
@@ -7,27 +8,40 @@
 
 HttpResponse ErrorResponseBuilder::build(const ServerConfig &config,
                                          int statusCode) {
-  return build(config, statusCode, reasonPhrase(statusCode));
-}
-
-HttpResponse ErrorResponseBuilder::build(const ServerConfig &config,
-                                         int statusCode,
-                                         const std::string &message) {
   std::string body;
   std::string contentType;
 
   if (tryBuildConfiguredErrorPage(config, statusCode, body, contentType)) {
-    HttpResponse response;
-    response.setStatusCode(statusCode);
+    HttpResponse response =
+        ResponseFactory::makeWithoutRequest(config, statusCode);
     response.setHeader("Content-Type", contentType);
     response.setBody(body);
     return response;
   }
 
-  HttpResponse response;
-  response.setStatusCode(statusCode);
+  HttpResponse response =
+      ResponseFactory::makeWithoutRequest(config, statusCode);
   response.setHeader("Content-Type", "text/html");
-  response.setBody(defaultErrorHtml(statusCode, message));
+  response.setBody(defaultErrorHtml(statusCode, reasonPhrase(statusCode)));
+  return response;
+}
+
+HttpResponse ErrorResponseBuilder::build(const ServerConfig &config,
+                                         const HttpRequest &req,
+                                         int statusCode) {
+  std::string body;
+  std::string contentType;
+
+  if (tryBuildConfiguredErrorPage(config, statusCode, body, contentType)) {
+    HttpResponse response = ResponseFactory::make(req, config, statusCode);
+    response.setHeader("Content-Type", contentType);
+    response.setBody(body);
+    return response;
+  }
+
+  HttpResponse response = ResponseFactory::make(req, config, statusCode);
+  response.setHeader("Content-Type", "text/html");
+  response.setBody(defaultErrorHtml(statusCode, reasonPhrase(statusCode)));
   return response;
 }
 

@@ -2,6 +2,7 @@
 #include "response/AutoIndex.hpp"
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/FileResponder.hpp"
+#include "response/ResponseFactory.hpp"
 #include "response/ResponseIO.hpp"
 #include <sys/stat.h>
 #include <vector>
@@ -12,31 +13,31 @@ HttpResponse GetResponder::handle(const ServerConfig &config,
   const std::string uri = req.getUri();
 
   if (!FileResponder::isSafeUri(uri))
-    return ErrorResponseBuilder::build(config, 400);
+    return ErrorResponseBuilder::build(config, req, 400);
 
   std::string filePath = ResponseIO::joinPath(
       FileResponder::getDocumentRoot(config, location), uri);
 
   if (FileResponder::isDirectory(filePath))
-    return handleDirectory(config, location, uri, filePath);
+    return handleDirectory(config, location, req, uri, filePath);
 
   if (!FileResponder::isRegularFile(filePath))
-    return ErrorResponseBuilder::build(config, 404);
+    return ErrorResponseBuilder::build(config, req, 404);
 
-  return buildFileResponse(filePath);
+  return buildFileResponse(req, config, filePath);
 }
 
 HttpResponse GetResponder::handleDirectory(const ServerConfig &config,
                                            const LocationConfig *location,
+                                           const HttpRequest &req,
                                            const std::string &uri,
                                            const std::string &dirPath) {
   const std::string indexPath = getIndexPath(config, location, dirPath);
   if (!indexPath.empty())
-    return buildFileResponse(indexPath);
+    return buildFileResponse(req, config, indexPath);
 
   if (uri.empty() || uri[uri.length() - 1] != '/') {
-    HttpResponse response;
-    response.setStatusCode(301);
+    HttpResponse response = ResponseFactory::make(req, config, 301);
     response.setHeader("Location", uri + "/");
     return response;
   }
@@ -44,16 +45,15 @@ HttpResponse GetResponder::handleDirectory(const ServerConfig &config,
   if (location != NULL && location->getAutoIndex()) {
     const std::string html = AutoIndex::buildHtml(uri, dirPath);
     if (html.empty())
-      return ErrorResponseBuilder::build(config, 403);
+      return ErrorResponseBuilder::build(config, req, 403);
 
-    HttpResponse response;
-    response.setStatusCode(200);
+    HttpResponse response = ResponseFactory::make(req, config, 200);
     response.setHeader("Content-Type", "text/html");
     response.setBody(html);
     return response;
   }
 
-  return ErrorResponseBuilder::build(config, 403);
+  return ErrorResponseBuilder::build(config, req, 403);
 }
 
 std::string GetResponder::getIndexPath(const ServerConfig &config,
@@ -86,23 +86,19 @@ std::string GetResponder::getIndexPath(const ServerConfig &config,
   return "";
 }
 
-HttpResponse GetResponder::buildFileResponse(const std::string &filePath) {
+HttpResponse GetResponder::buildFileResponse(const HttpRequest &req,
+                                             const ServerConfig &config,
+                                             const std::string &filePath) {
   std::string content;
   if (!ResponseIO::readFile(filePath, content)) {
-    HttpResponse response;
-    response.setStatusCode(403);
+    HttpResponse response = ResponseFactory::make(req, config, 403);
     response.setHeader("Content-Type", "text/plain");
-    response.setHeader("Server", "webserv/1.0");
-    response.setHeader("Date", ResponseIO::getCurrentDate());
     response.setBody("Forbidden");
     return response;
   }
 
-  HttpResponse response;
-  response.setStatusCode(200);
+  HttpResponse response = ResponseFactory::make(req, config, 200);
   response.setHeader("Content-Type", ResponseIO::guessContentType(filePath));
-  response.setHeader("Server", "webserv/1.0");
-  response.setHeader("Date", ResponseIO::getCurrentDate());
   response.setBody(content);
   return response;
 }

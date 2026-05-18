@@ -15,6 +15,7 @@ public:
 private:
   static HttpResponse handleDirectory(const ServerConfig &config,
                                       const LocationConfig *location,
+                                      const HttpRequest &req,
                                       const std::string &uri,
                                       const std::string &dirPath);
 
@@ -22,5 +23,7 @@ private:
                                   const LocationConfig *location,
                                   const std::string &dirPath);
 
-  static HttpResponse buildFileResponse(const std::string &filePath);
+  static HttpResponse buildFileResponse(const HttpRequest &req,
+                                        const ServerConfig &config,
+                                        const std::string &filePath);
 };

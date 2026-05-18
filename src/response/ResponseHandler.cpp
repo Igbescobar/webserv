@@ -37,7 +37,7 @@ HttpResponse ResponseHandler::handle() {
   if (method == "DELETE")
     return FileResponder::handleDelete(config, location, *req);
 
-  return ErrorResponseBuilder::build(config, 405);
+  return ErrorResponseBuilder::build(config, *req, 404);
 }
 
 bool ResponseHandler::isMethodAllowed(const LocationConfig *location,

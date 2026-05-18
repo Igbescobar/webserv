@@ -7,5 +7,5 @@ HttpResponse DeleteResponder::handle(const ServerConfig &config,
   (void)location;
   (void)req;
 
-  return ErrorResponseBuilder::build(config, 501);
+  return ErrorResponseBuilder::build(config, req, 501);
 }
