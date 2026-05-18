@@ -39,6 +39,7 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
 }
 
 //----------------------------------------------------------
+
 void HttpRequest::checkRequestLine() {
   if (method != "GET" && method != "POST" && method != "DELETE" &&
       method != "HEAD") {
@@ -102,8 +103,30 @@ void HttpRequest::parseRequestLine() {
 
 //-----------------------------------------------------------
 
+bool HttpRequest::isValidHeaderKey(const std::string &key) {
 
-std::string toLowerCase
+  if (key.empty() || key.find(' ') != std::string::npos ||
+      key.find('\t') != std::string::npos)
+    return false;
+  for (size_t i = 0; i < key.size(); i++)
+    if (!isalnum(key[i]) && key[i] != '-' && key[i] != '_')
+      return false;
+  return true;
+}
+
+std::string HttpRequest::toLowerCase(const std::string &str) {
+  std::string result = str;
+  for (size_t i = 0; i < result.size(); i++)
+    result[i] = tolower(result[i]);
+  return result;
+}
+
+std::string HttpRequest::trim(const std::string &str) {
+  size_t end = str.find_last_not_of(" \t\r\n");
+  if (end == std::string::npos)
+    return "";
+  return str.substr(0, end + 1);
+}
 
 void HttpRequest::parseHeaderLine(const std::string &headerLine) {
   if (headerLine == "\r\n" || headerLine.empty())
@@ -114,28 +137,17 @@ void HttpRequest::parseHeaderLine(const std::string &headerLine) {
     return;
   }
   std::string key = headerLine.substr(0, colonPos);
-  if (key.empty() || key.find(' ') != std::string::npos ||
-      key.find('\t') != std::string::npos) {
+  if (!isValidHeaderKey(key)) {
     state = ERROR;
     return;
   }
-  for (size_t i = 0; i < key.size(); i++) {
-    if (!isalnum(key[i]) && key[i] != '-' && key[i] != '_') {
-      state = ERROR;
-      return;
-    }
-    key[i] = tolower(key[i]);
-  }
+  key = toLowerCase(key);
   size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
   if (valueStart == std::string::npos) {
     this->headers[key] = "";
     return;
   }
-  std::string value = headerLine.substr(valueStart);
-  size_t end = value.find_last_not_of(" \t\r\n");
-  if (end != std::string::npos)
-    value = value.substr(0, end + 1);
-  this->headers[key] = value;
+  this->headers[key] = trim(headerLine.substr(valueStart));
 }
 
 void HttpRequest::parseHeaders() {
@@ -152,7 +164,6 @@ void HttpRequest::parseHeaders() {
     size_t lineEnd = buf.find("\r\n", headerStart);
     if (lineEnd == std::string::npos || lineEnd > headerEnd)
       lineEnd = headerEnd;
-    std::cout << "\033[31m" << "----------------------------\n" << "\033[0m";
     parseHeaderLine(buf.substr(headerStart, (lineEnd + 2) - headerStart));
     if (state == ERROR) {
       return;
@@ -221,8 +232,6 @@ bool HttpRequest::isBodyComplete() {
 //--------------------------------------------------------------------------
 
 void HttpRequest::parse(std::string chunk) {
-  std::cout << "\033[32m" << "------------------------------------------\n"
-            << "\033[0m";
   buf += chunk;
   size_t pos = buf.find("\r\n");
   size_t pos1 = buf.find(DELIMETER);

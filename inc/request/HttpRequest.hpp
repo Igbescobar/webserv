@@ -34,6 +34,9 @@ public:
   void  parseRequestLine();
   void	parseRequestLineValues(const std::string &header);
   void	parseHeaders();
+  bool	isValidHeaderKey(const std::string &key);
+  std::string	toLowerCase(const std::string &str);
+  std::string	trim(const std::string &str);
   void	parseHeaderLine(const std::string &headerLine);
   void	parseBody();
   void	parseChunkedBody(size_t pos);
@@ -43,18 +46,6 @@ public:
   void	printState();
   bool	isBodyComplete();
 
-  class HttpRequestException: public std::exception
-  {
-	  private:
-		std::string _msg;
-		int		_code;
-	public:
-		HttpRequestException(std::string msg, int code): _msg(msg), _code(code){}
-		~HttpRequestException() throw() {}
-		const	char* what() const throw(){ return _msg.c_str();}
-		int code() const { return _code;}
-		std::string msg() const { return _msg;}
-  };
   std::string getMethod() const;
   std::string getUri() const;
   std::string getVersion() const;

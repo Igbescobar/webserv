@@ -116,17 +116,14 @@ void Server::client_read(int fd) {
   requestMap[fd].parse(buffer);
   switch (requestMap[fd].getState()) {
   case INCOMPLETE:
-    requestMap[fd].printState();
     return;
   case COMPLETE:
     responseMap[fd] =
         HttpResponse(requestMap[fd].getServerConfig(), requestMap[fd]);
-    requestMap[fd].printState();
     break;
   case ERROR:
     responseMap[fd] = HttpResponse(requestMap[fd].getServerConfig(),
                                    requestMap[fd].getErrorCode());
-    requestMap[fd].printState();
     break;
   default:
     throw std::runtime_error("undefined t_state value");
