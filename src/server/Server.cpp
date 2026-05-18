@@ -113,8 +113,6 @@ void Server::client_read(int fd) {
   }
 
   buffer[bytes_read] = '\0';
-  //requestMap[fd].append(buffer);
-  //std::cout<<"ENTRA AQUI TAMBIEN\n";
   requestMap[fd].parse(buffer);
   switch (requestMap[fd].getState()) {
   case INCOMPLETE:

@@ -1,5 +1,6 @@
 #include "request/HttpRequest.hpp"
 #include "parser/config/ServerConfig.hpp"
+#include <iostream>
 #include <string>
 
 HttpRequest::HttpRequest() {}
@@ -17,6 +18,11 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
+  uri = other.uri;
+  version = other.version;
+  headers = other.headers;
+  body = other.body;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
@@ -24,161 +30,243 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
+  uri = other.uri;
+  version = other.version;
+  headers = other.headers;
+  body = other.body;
   return *this;
 }
 
-void HttpRequest::append(std::string chunk) {
-  buf += chunk;
-  updateState();
+//----------------------------------------------------------
+void HttpRequest::checkRequestLine() {
+  if (method != "GET" && method != "POST" && method != "DELETE" &&
+      method != "HEAD") {
+    state = ERROR;
+    return;
+  }
+  if (version != "HTTP/1.1") {
+    state = ERROR;
+    return;
+  }
 }
 
-void HttpRequest::updateState() {
-  size_t pos = buf.find(DELIMETER);
-  if (pos == std::string::npos) {
-    state = INCOMPLETE;
+void HttpRequest::checkRequestHeaders() {
+  if (getHeader("host").empty())
+    state = ERROR;
+  if ((method == "GET" || method == "DELETE") &&
+      (!getHeader("content-length").empty() ||
+       !getHeader("transfer-encoding").empty())) {
+    state = ERROR;
+    return;
+  }
+  if (method == "POST" && getHeader("content-length").empty() &&
+      getHeader("transfer-encoding").empty()) {
+    state = ERROR;
+    return;
+  } // 411 Length Required
+  const std::string &cl = getHeader("content-length");
+  for (size_t i = 0; i < cl.size(); i++)
+    if (!isdigit(cl[i]))
+      state = ERROR;
+}
+
+//---------------------------------------------------------
+
+void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
+  size_t first = requestLine.find(" ");
+  if (first == std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  size_t second = requestLine.find(" ", first + 1);
+  if (second == std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  method = requestLine.substr(0, first);
+  uri = requestLine.substr(first + 1, second - first - 1);
+  version = requestLine.substr(second + 1);
+  checkRequestLine();
+}
+
+void HttpRequest::parseRequestLine() {
+  size_t end = buf.find("\r\n");
+  if (end == std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  parseRequestLineValues(buf.substr(0, end));
+  headerStart = end + 2;
+}
+
+//-----------------------------------------------------------
+
+
+std::string toLowerCase
+
+void HttpRequest::parseHeaderLine(const std::string &headerLine) {
+  if (headerLine == "\r\n" || headerLine.empty())
+    return;
+  size_t colonPos = headerLine.find(":");
+  if (colonPos == std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  std::string key = headerLine.substr(0, colonPos);
+  if (key.empty() || key.find(' ') != std::string::npos ||
+      key.find('\t') != std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  for (size_t i = 0; i < key.size(); i++) {
+    if (!isalnum(key[i]) && key[i] != '-' && key[i] != '_') {
+      state = ERROR;
+      return;
+    }
+    key[i] = tolower(key[i]);
+  }
+  size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
+  if (valueStart == std::string::npos) {
+    this->headers[key] = "";
+    return;
+  }
+  std::string value = headerLine.substr(valueStart);
+  size_t end = value.find_last_not_of(" \t\r\n");
+  if (end != std::string::npos)
+    value = value.substr(0, end + 1);
+  this->headers[key] = value;
+}
+
+void HttpRequest::parseHeaders() {
+  size_t headerEnd = buf.find(DELIMETER);
+  if (headerEnd == std::string::npos) {
+    state = ERROR;
+    return;
+  }
+  if (headerStart > headerEnd) {
+    state = ERROR;
+    return;
+  }
+  while (headerStart < headerEnd) {
+    size_t lineEnd = buf.find("\r\n", headerStart);
+    if (lineEnd == std::string::npos || lineEnd > headerEnd)
+      lineEnd = headerEnd;
+    std::cout << "\033[31m" << "----------------------------\n" << "\033[0m";
+    parseHeaderLine(buf.substr(headerStart, (lineEnd + 2) - headerStart));
+    if (state == ERROR) {
+      return;
+    }
+    headerStart = lineEnd + 2;
+  }
+  checkRequestHeaders();
+}
+
+void HttpRequest::parseChunkedBody(size_t pos) {
+  while (pos < buf.size()) {
+    size_t chunkSizeEnd = buf.find("\r\n", pos);
+    if (chunkSizeEnd == std::string::npos) {
+      state = ERROR;
+      return;
+    }
+    char *endptr;
+    size_t chunkSize =
+        std::strtoul(buf.substr(pos, chunkSizeEnd - pos).c_str(), &endptr, 16);
+    if (*endptr != '\0') {
+      state = ERROR;
+      return;
+    }
+    if (chunkSize == 0) {
+      state = COMPLETE;
+      return;
+    }
+    size_t dataStart = chunkSizeEnd + 2;
+    body += buf.substr(dataStart, chunkSize);
+    pos = dataStart + chunkSize + 2;
+  }
+}
+
+void HttpRequest::parseBody() {
+  size_t bodyStart = buf.find(DELIMETER) + 4;
+  if (getHeader("transfer-encoding") == "chunked") {
+    parseChunkedBody(bodyStart);
+    return;
+  }
+  if (!getHeader("content-length").empty()) {
+    size_t number = std::strtoul(getHeader("content-length").c_str(), NULL, 10);
+    size_t available = buf.size() - bodyStart;
+    if (available < number) {
+      state = INCOMPLETE;
+      return;
+    }
+    body = buf.substr(bodyStart, number);
+    state = COMPLETE;
     return;
   }
   state = COMPLETE;
 }
 
-void	HttpRequest::checkRequestLine()
-{
-	if(method != "GET" && method != "POST" && method != "DELETE" && method != "HEAD")
-		state = ERROR;
-	if(version != "HTTP/1.1")
-		state = ERROR;
+bool HttpRequest::isBodyComplete() {
+  if (getHeader("transfer-encoding") == "chunked") {
+    return buf.find("0\r\n\r\n") != std::string::npos;
+  }
+  if (!getHeader("content-length").empty()) {
+    size_t bodyStart = buf.find(DELIMETER) + 4;
+    size_t length = std::strtoul(getHeader("content-length").c_str(), NULL, 10);
+    return buf.size() - bodyStart >= length;
+  }
+  return true;
 }
 
-void	HttpRequest::checkRequestHeaders()
-{
-	if (getHeader("host").empty())
-		state = ERROR;
-	const std::string &cl = getHeader("content-length");
-	for (size_t i = 0; i < cl.size(); i++)
-		if (!isdigit(cl[i]))
-			state = ERROR;
+//--------------------------------------------------------------------------
+
+void HttpRequest::parse(std::string chunk) {
+  std::cout << "\033[32m" << "------------------------------------------\n"
+            << "\033[0m";
+  buf += chunk;
+  size_t pos = buf.find("\r\n");
+  size_t pos1 = buf.find(DELIMETER);
+  if (pos != std::string::npos && getVersion().empty()) {
+    parseRequestLine();
+    if (state == ERROR)
+      return;
+  }
+  if (pos1 != std::string::npos && getHeaders().empty()) {
+    parseHeaders();
+    if (state == ERROR)
+      return;
+  }
+  if (!getHeaders().empty() && isBodyComplete()) {
+    parseBody();
+  }
 }
 
-void	HttpRequest::parseRequestLineValues(const std::string &requestLine)
-{
-	size_t first = requestLine.find(" ");
-	if (first == std::string::npos) { state = ERROR; return; }
-	size_t second = requestLine.find(" ", first + 1);
-	if (second == std::string::npos) { state = ERROR; return; }
-	method = requestLine.substr(0, first);
-	uri = requestLine.substr(first + 1, second - first - 1);
-	version = requestLine.substr(second + 1);
-	checkRequestLine();
+void HttpRequest::printState() {
+  if (state == INCOMPLETE)
+    std::cout << "INCOMPLETE\n";
+  else if (state == COMPLETE)
+    std::cout << "COMPLETE\n";
+  else
+    std::cout << "ERROR\n";
 }
 
-void	HttpRequest::parseHeaderLine(const std::string &headerLine)
-{
-	if(headerLine == "\r\n" || headerLine.empty())
-		return;
-	size_t colonPos = headerLine.find(":");
-	if(colonPos == std::string::npos)
-		return;
-	std::string key = headerLine.substr(0, colonPos);
-	if(key.empty() || key.find(' ') != std::string::npos || key.find('\t') != std::string::npos)
-		state = ERROR;
-	for(size_t i = 0; i < key.size(); i++)
-		key[i] = tolower(key[i]);
-	size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
-	std::string value = headerLine.substr(valueStart);
-	size_t end = value.find_last_not_of("\r\n");
-	if(end != std::string::npos)
-		value = value.substr(0, end + 1);
-	this->headers[key] = value;
+std::string HttpRequest::getMethod() const { return this->method; }
+std::string HttpRequest::getUri() const { return this->uri; }
+
+std::string HttpRequest::getVersion() const { return this->version; }
+
+std::string HttpRequest::getBody() const { return this->body; }
+
+std::string HttpRequest::getHeader(const std::string &key) const {
+  std::map<std::string, std::string>::const_iterator it = headers.find(key);
+  if (it == headers.end()) {
+    return "";
+  }
+  return it->second;
 }
 
-void	HttpRequest::parseHeaders(const std::string &header, size_t pos)
-{
-	if(pos > header.length())
-		state = ERROR;
-	while(pos < header.length())
-	{
-		size_t lineEnd = header.find("\r\n", pos);
-		if(lineEnd == std::string::npos)
-			lineEnd = header.length();
-		std::cout<<"\033[31m"<<"----------------------------\n"<<"\033[0m";
-		parseHeaderLine(header.substr(pos, (lineEnd + 2) - pos));
-		pos = lineEnd + 2;
-	}
-	checkRequestHeaders();
-}
-
-void HttpRequest::parseBody(const std::string &rawData)
-{
-	size_t bodyStart = rawData.find(DELIMETER);
-	bodyStart += 4;
-	this->body = rawData.substr(bodyStart);
-}
-
-
-void HttpRequest::parseRequestLine()
-{
-    size_t end = buf.find("\r\n");
-    if (end == std::string::npos) { state = ERROR; return; }
-    parseRequestLineValues(buf.substr(0, end));
-    headerStart = end + 2; // guarda la posición para parseHeaders
-}
-
-void	HttpRequest::parse(std::string chunk)
-{
-	std::cout<<"\033[32m"<<"------------------------------------------\n"<<"\033[0m";
-	append(chunk);
-	if(state != COMPLETE)
-		return;
-	parseRequestLine();
-	if(state == ERROR)
-		return;
-	parseHeaders(buf, headerStart);
-	if(state == ERROR)
-		return;
-}
-
-void	HttpRequest::printState()
-{
-	if(state == INCOMPLETE)
-		std::cout<<"INCOMPLETE\n";
-	else if(state == COMPLETE)
-		std::cout<<"COMPLETE\n";
-	else
-		std::cout<<"ERROR\n";
-}
-
-std::string	HttpRequest::getMethod() const
-{
-	return this->method;
-}
-std::string	HttpRequest::getUri() const
-{
-	return this->uri;
-}
-
-std::string	HttpRequest::getVersion() const
-{
-	return this->version;
-}
-
-std::string	HttpRequest::getBody() const
-{
-	return	this->body;
-}
-
-std::string	HttpRequest::getHeader(const std::string &key) const
-{
-	std::map<std::string, std::string>::const_iterator it = headers.find(key);
-	if (it == headers.end())
-	{
-		return "";
-	}
-	return it->second;
-}
-
-std::map<std::string, std::string> HttpRequest::getHeaders() const
-{
-	return this->headers;
+std::map<std::string, std::string> HttpRequest::getHeaders() const {
+  return this->headers;
 }
 
 ServerConfig HttpRequest::getServerConfig() { return serverConfig; }

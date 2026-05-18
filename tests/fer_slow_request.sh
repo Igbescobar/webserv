@@ -7,11 +7,13 @@
   printf "/ HTTP/1.1\r\n"
   sleep 1
   # Headers uno por uno
-  printf " Host: localhost:8080\r\n"
+  printf "Host: localhost:8080\r\n"
   sleep 1
   printf "Transfer-Enc"
   sleep 1
-  printf "oding: chunked\r\n"
+  printf "oding: chunked"
+  sleep 1
+  printf "\r\n"
   sleep 1
   printf "\r\n"
   sleep 1

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "parser/config/ServerConfig.hpp"
-#include <iostream>
+#include <cstdlib>
 #include <string>
 
 #define DELIMETER "\r\n\r\n"
@@ -20,7 +20,6 @@ private:
   std::map<std::string, std::string> headers;
   std::string body;
   size_t headerStart;
-  void updateState();
 
 public:
   HttpRequest();
@@ -34,13 +33,15 @@ public:
   void  parse(std::string chunck);
   void  parseRequestLine();
   void	parseRequestLineValues(const std::string &header);
-  void	parseHeaders(const std::string &header, size_t pos);
+  void	parseHeaders();
   void	parseHeaderLine(const std::string &headerLine);
-  void	parseBody(const std::string &rawData);
+  void	parseBody();
+  void	parseChunkedBody(size_t pos);
   void	checkRequestLine();
   void	checkRequestHeaders();
   void  checkIfLineComplete(std::string chunck);
   void	printState();
+  bool	isBodyComplete();
 
   class HttpRequestException: public std::exception
   {
