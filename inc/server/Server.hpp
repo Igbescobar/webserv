@@ -5,6 +5,7 @@
 #include "server/Client.hpp"
 #include "server/Epoll.hpp"
 #include "server/Socket.hpp"
+#include <csignal>
 #include <map>
 #include <string>
 #include <sys/epoll.h>
@@ -16,6 +17,7 @@ private:
   std::map<int, Client *> clientMap;
   const ConfigParser &globalConfig;
   Epoll epoll;
+  static volatile sig_atomic_t isRunning;
 
   void handleEvents(int n);
   void handleSingleEvent(int fd, uint32_t eventsMask);
@@ -27,9 +29,12 @@ private:
 
   const ServerConfig &getServerConfig(int serverFd) const;
 
+  void sweepTimeouts();
+
 public:
   Server(const ConfigParser &conf);
   ~Server();
 
   void run();
+  static void sigintHandler(int signum);
 };

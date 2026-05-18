@@ -6,6 +6,7 @@
 #include "server/Client.hpp"
 #include "server/Socket.hpp"
 #include <cerrno>
+#include <csignal>
 #include <cstring>
 #include <exception>
 #include <fcntl.h>
@@ -15,7 +16,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {}
+volatile sig_atomic_t Server::isRunning = 1;
+
+Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
+  signal(SIGINT, Server::sigintHandler);
+}
+
+void Server::sigintHandler(int signum) {
+  (void)signum;
+  isRunning = 0;
+}
 
 Server::~Server() {
   for (size_t i = 0; i < Sockets.size(); i++) {
@@ -48,8 +58,9 @@ void Server::startSingleServer(std::string ip, int port) {
 
 void Server::run() {
   startAllServers();
-  while (true) {
+  while (Server::isRunning) {
     handleEvents(epoll.wait());
+    sweepTimeouts();
   }
 }
 
@@ -74,10 +85,18 @@ void Server::handleServer(int serverFd) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  // TODO: check errno
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
-  if (clientFd < 0)
-    throw std::runtime_error("accept: " + std::string(strerror(errno)));
+  if (clientFd < 0) {
+    switch (errno) {
+    case EMFILE:
+    case ENFILE:
+      std::cout << "fd limit reached" << std::endl;
+    case EAGAIN:
+      return;
+    default:
+      throw std::runtime_error("accept: " + std::string(strerror(errno)));
+    }
+  }
 
   try {
     clientMap[clientFd] =
@@ -103,4 +122,18 @@ const ServerConfig &Server::getServerConfig(int serverFd) const {
     }
   }
   throw std::runtime_error("ServerConfig not found");
+}
+
+void Server::sweepTimeouts() {
+  std::map<int, Client *>::iterator it = clientMap.begin();
+  while (it != clientMap.end()) {
+    Client *client = it->second;
+
+    if (client->isTimedOut()) {
+      delete client;
+      clientMap.erase(it++);
+    } else {
+      ++it;
+    }
+  }
 }

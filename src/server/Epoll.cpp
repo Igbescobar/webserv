@@ -60,7 +60,7 @@ int Epoll::wait() {
 
   numEvents =
       epoll_wait(epollFd, epollEvents, EPOLL_MAX_EVENTS, EPOLL_TIMEOUT_MS);
-  if (numEvents < 0)
+  if (numEvents < 0 && errno != EINTR)
     throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
   return numEvents;
 }
