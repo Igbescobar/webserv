@@ -21,16 +21,6 @@ private:
   std::string body;
   size_t headerStart;
 
-public:
-  HttpRequest();
-  HttpRequest(ServerConfig serverConfig);
-  ~HttpRequest();
-  HttpRequest(const HttpRequest &other);
-  HttpRequest &operator=(const HttpRequest &other);
-
-  void append(std::string chunk);
-
-  void  parse(std::string chunck);
   void  parseRequestLine();
   void	parseRequestLineValues(const std::string &header);
   void	parseHeaders();
@@ -46,18 +36,22 @@ public:
   void	printState();
   bool	isBodyComplete();
 
-  std::string getMethod() const;
-  std::string getUri() const;
-  std::string getVersion() const;
-  std::string getHeader(const std::string &key) const;
-  std::map<std::string, std::string> getHeaders() const;
-  std::string getBody() const;
+public:
+  HttpRequest();
+  HttpRequest(ServerConfig serverConfig);
+  ~HttpRequest();
+  HttpRequest(const HttpRequest &other);
+  HttpRequest &operator=(const HttpRequest &other);
 
-  t_state getState();
-
-  int getErrorCode();
-
-  ServerConfig getServerConfig();
-
-  std::string getRequest();
+  void append(const std::string &chunk);
+  const std::string &getMethod() const;
+  const std::string &getUri() const;
+  const std::string &getVersion() const;
+  const std::string &getHeader(const std::string &key) const;
+  const std::map<std::string, std::string>&getHeaders() const;
+  const ServerConfig &getServerConfig() const;
+  const std::string &getBody() const;
+  t_state getState() const;
+  int getErrorCode() const;
+  const std::string &getRequest() const;
 };
