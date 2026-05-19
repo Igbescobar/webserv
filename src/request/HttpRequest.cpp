@@ -38,15 +38,13 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   return *this;
 }
 
-//----------------------------------------------------------
-
 void HttpRequest::checkRequestLine() {
   if (method != "GET" && method != "POST" && method != "DELETE" &&
       method != "HEAD") {
     state = ERROR;
     return;
   }
-  if (version != "HTTP/1.1") {
+  if (version != "HTTP/1.0") {
     state = ERROR;
     return;
   }
@@ -65,14 +63,12 @@ void HttpRequest::checkRequestHeaders() {
       getHeader("transfer-encoding").empty()) {
     state = ERROR;
     return;
-  } // 411 Length Required
+  }
   const std::string &cl = getHeader("content-length");
   for (size_t i = 0; i < cl.size(); i++)
     if (!isdigit(cl[i]))
       state = ERROR;
 }
-
-//---------------------------------------------------------
 
 void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
   size_t first = requestLine.find(" ");
@@ -100,8 +96,6 @@ void HttpRequest::parseRequestLine() {
   parseRequestLineValues(buf.substr(0, end));
   headerStart = end + 2;
 }
-
-//-----------------------------------------------------------
 
 bool HttpRequest::isValidHeaderKey(const std::string &key) {
 
@@ -228,8 +222,6 @@ bool HttpRequest::isBodyComplete() {
   }
   return true;
 }
-
-//--------------------------------------------------------------------------
 
 void HttpRequest::parse(std::string chunk) {
   buf += chunk;
