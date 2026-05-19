@@ -42,7 +42,7 @@ bool Client::read(int clientFd) {
   }
 
   buffer[bytesRead] = '\0';
-  request.append(buffer);
+  request.parse(buffer);
 
   switch (request.getState()) {
   case INCOMPLETE:
