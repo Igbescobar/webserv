@@ -250,14 +250,14 @@ bool HttpRequest::isBodyComplete() {
 
 void HttpRequest::append(const std::string &chunk) {
   buf += chunk;
-  printState();
+  print();
   size_t pos = buf.find("\r\n");
   size_t pos1 = buf.find(DELIMETER);
   if (pos != std::string::npos && getVersion().empty()) {
     parseRequestLine();
     if (state == ERROR)
     {
-      printState();
+      print();
       return;
     }
   }
@@ -265,24 +265,28 @@ void HttpRequest::append(const std::string &chunk) {
     parseHeaders();
     if (state == ERROR)
     {
-      printState();
+      print();
       return;
     }
   }
   if (!getHeaders().empty() && isBodyComplete()) {
     parseBody();
   }
-  printState();
+  print();
 }
 
-void HttpRequest::printState() {
-  if (state == INCOMPLETE)
-    std::cout << "INCOMPLETE\n";
-  else if (state == COMPLETE)
-    std::cout << "COMPLETE\n";
-  else
-    std::cout << "ERROR\n";
-  std::cout<<errorCode<<"\n";
+void HttpRequest::print() const {
+  std::cout << "=== HttpRequest ===\n";
+  std::cout << "State:      " << (state == INCOMPLETE ? "INCOMPLETE" : state == COMPLETE ? "COMPLETE" : "ERROR") << "\n";
+  std::cout << "ErrorCode:  " << errorCode << "\n";
+  std::cout << "Method:     " << method << "\n";
+  std::cout << "URI:        " << uri << "\n";
+  std::cout << "Version:    " << version << "\n";
+  std::cout << "Headers:\n";
+  for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+    std::cout << "  " << it->first << ": " << it->second << "\n";
+  std::cout << "Body:       " << body << "\n";
+  std::cout << "Buf size:   " << buf.size() << "\n";
 }
 
 const std::string &HttpRequest::getMethod() const { return this->method; }

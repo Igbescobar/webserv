@@ -32,7 +32,7 @@ private:
   void	parseChunkedBody(size_t pos);
   void	checkRequestLine();
   void	checkRequestHeaders();
-  void	printState();
+  void	print() const;
   bool	isBodyComplete();
 
 public:
