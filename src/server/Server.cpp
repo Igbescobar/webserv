@@ -73,8 +73,9 @@ void Server::handleEvents(int n) {
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
-      delete clientMap[triggeredFd];
+      Client *clientToDelete = clientMap[triggeredFd];
       clientMap.erase(triggeredFd);
+      delete clientToDelete;
     }
   } else {
     handleServer(triggeredFd);
