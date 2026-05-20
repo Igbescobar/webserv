@@ -18,8 +18,6 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
-  method = other.method;
-  uri = other.uri;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
@@ -27,20 +25,200 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
-  method = other.method;
-  uri = other.uri;
   return *this;
 }
 
-void HttpRequest::append(std::string chunk) {
-  buf += chunk;
-  updateState();
+void HttpRequest::checkRequestLine() {
+  if (method != "GET" && method != "POST" && method != "DELETE" &&
+      method != "HEAD") {
+    errorCode = 501;
+    state = ERROR;
+    return;
+  }
+  if (version != "HTTP/1.0" && version != "HTTP/1.1") {
+    errorCode = 505;
+    state = ERROR;
+    return;
+  }
 }
 
-void HttpRequest::updateState() {
-  size_t pos = buf.find(DELIMETER);
-  if (pos == std::string::npos) {
-    state = INCOMPLETE;
+void HttpRequest::checkRequestHeaders() {
+  if (getHeader("host").empty()) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  if (getHeader("host").find(' ') != std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  if ((method == "GET" || method == "DELETE") &&
+      (!getHeader("content-length").empty() ||
+       !getHeader("transfer-encoding").empty())) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  if (method == "POST" && getHeader("content-length").empty() &&
+      getHeader("transfer-encoding").empty()) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  const std::string &cl = getHeader("content-length");
+  for (size_t i = 0; i < cl.size(); i++)
+    if (!isdigit(cl[i])) {
+      errorCode = 400;
+      state = ERROR;
+      return;
+    }
+}
+
+void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
+  size_t first = requestLine.find(" ");
+  if (first == std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  size_t second = requestLine.find(" ", first + 1);
+  if (second == std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  method = requestLine.substr(0, first);
+  uri = requestLine.substr(first + 1, second - first - 1);
+  version = requestLine.substr(second + 1);
+  checkRequestLine();
+}
+
+void HttpRequest::parseRequestLine() {
+  size_t end = buf.find("\r\n");
+  if (end == std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  parseRequestLineValues(buf.substr(0, end));
+  headerStart = end + 2;
+}
+
+bool HttpRequest::isValidHeaderKey(const std::string &key) {
+
+  if (key.empty() || key.find(' ') != std::string::npos ||
+      key.find('\t') != std::string::npos)
+    return false;
+  for (size_t i = 0; i < key.size(); i++)
+    if (!isalnum(key[i]) && key[i] != '-' && key[i] != '_')
+      return false;
+  return true;
+}
+
+std::string HttpRequest::toLowerCase(const std::string &str) {
+  std::string result = str;
+  for (size_t i = 0; i < result.size(); i++)
+    result[i] = tolower(result[i]);
+  return result;
+}
+
+std::string HttpRequest::trim(const std::string &str) {
+  size_t end = str.find_last_not_of(" \t\r\n");
+  if (end == std::string::npos)
+    return "";
+  return str.substr(0, end + 1);
+}
+
+void HttpRequest::parseHeaderLine(const std::string &headerLine) {
+  if (headerLine == "\r\n" || headerLine.empty())
+    return;
+  size_t colonPos = headerLine.find(":");
+  if (colonPos == std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  std::string key = headerLine.substr(0, colonPos);
+  if (!isValidHeaderKey(key)) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  key = toLowerCase(key);
+  size_t valueStart = headerLine.find_first_not_of(" \t", colonPos + 1);
+  if (valueStart == std::string::npos) {
+    this->headers[key] = "";
+    return;
+  }
+  this->headers[key] = trim(headerLine.substr(valueStart));
+}
+
+void HttpRequest::parseHeaders() {
+  size_t headerEnd = buf.find(DELIMETER);
+  if (headerEnd == std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  if (headerStart > headerEnd) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
+  while (headerStart < headerEnd) {
+    size_t lineEnd = buf.find("\r\n", headerStart);
+    if (lineEnd == std::string::npos || lineEnd > headerEnd)
+      lineEnd = headerEnd;
+    parseHeaderLine(buf.substr(headerStart, (lineEnd + 2) - headerStart));
+    if (state == ERROR) {
+      return;
+    }
+    headerStart = lineEnd + 2;
+  }
+  checkRequestHeaders();
+}
+
+void HttpRequest::parseChunkedBody(size_t pos) {
+  while (pos < buf.size()) {
+    size_t chunkSizeEnd = buf.find("\r\n", pos);
+    if (chunkSizeEnd == std::string::npos) {
+      state = ERROR;
+      return;
+    }
+    char *endptr;
+    size_t chunkSize =
+        std::strtoul(buf.substr(pos, chunkSizeEnd - pos).c_str(), &endptr, 16);
+    if (*endptr != '\0') {
+      errorCode = 400;
+      state = ERROR;
+      return;
+    }
+    if (chunkSize == 0) {
+      state = COMPLETE;
+      return;
+    }
+    size_t dataStart = chunkSizeEnd + 2;
+    body += buf.substr(dataStart, chunkSize);
+    pos = dataStart + chunkSize + 2;
+  }
+}
+
+void HttpRequest::parseBody() {
+  size_t bodyStart = buf.find(DELIMETER) + 4;
+  if (getHeader("transfer-encoding") == "chunked") {
+    parseChunkedBody(bodyStart);
+    return;
+  }
+  if (!getHeader("content-length").empty()) {
+    size_t number = std::strtoul(getHeader("content-length").c_str(), NULL, 10);
+    size_t available = buf.size() - bodyStart;
+    if (available < number) {
+      state = INCOMPLETE;
+      return;
+    }
+    body = buf.substr(bodyStart, number);
+    state = COMPLETE;
     return;
   }
 
@@ -52,85 +230,10 @@ void HttpRequest::updateState() {
   state = COMPLETE;
 }
 
-const ServerConfig &HttpRequest::getServerConfig() const {
-  return serverConfig;
-}
+ServerConfig HttpRequest::getServerConfig() { return serverConfig; }
 
-t_state HttpRequest::getState() { return state; }
+t_state HttpRequest::getState() const { return state; }
 
-int HttpRequest::getErrorCode() { return errorCode; }
+int HttpRequest::getErrorCode() const { return errorCode; }
 
 std::string HttpRequest::getRequest() { return buf; }
-
-std::string HttpRequest::getUri() const { return uri; }
-
-std::string HttpRequest::getMethod() const { return method; }
-
-std::string HttpRequest::getBody() const {
-  const std::string delim = "\r\n\r\n";
-  size_t pos = buf.find(delim);
-  if (pos == std::string::npos)
-    return "";
-  return buf.substr(pos + delim.size());
-}
-
-static std::string toLowerAscii(const std::string &s) {
-  std::string out;
-  out.reserve(s.size());
-  for (size_t i = 0; i < s.size(); ++i)
-    out += static_cast<char>(std::tolower(static_cast<unsigned char>(s[i])));
-  return out;
-}
-
-static std::string trimSpaces(const std::string &s) {
-  size_t b = 0;
-  while (b < s.size() &&
-         (s[b] == ' ' || s[b] == '\t' || s[b] == '\r' || s[b] == '\n'))
-    ++b;
-
-  size_t e = s.size();
-  while (e > b && (s[e - 1] == ' ' || s[e - 1] == '\t' || s[e - 1] == '\r' ||
-                   s[e - 1] == '\n'))
-    --e;
-
-  return s.substr(b, e - b);
-}
-
-// Boilerplate header lookup for response testing.
-// - Case-insensitive header name match
-// - Returns "" if missing
-// - Scans only the header section (before \r\n\r\n)
-std::string HttpRequest::getHeader(const std::string &name) const {
-  const std::string needle = toLowerAscii(name);
-
-  const size_t headerEnd = buf.find(DELIMETER);
-  const size_t scanEnd =
-      (headerEnd == std::string::npos) ? buf.size() : headerEnd;
-
-  // Skip request line
-  size_t lineStart = buf.find("\r\n");
-  if (lineStart == std::string::npos || lineStart >= scanEnd)
-    return "";
-  lineStart += 2;
-
-  while (lineStart < scanEnd) {
-    size_t lineEnd = buf.find("\r\n", lineStart);
-    if (lineEnd == std::string::npos || lineEnd > scanEnd)
-      lineEnd = scanEnd;
-
-    if (lineEnd == lineStart)
-      break;
-
-    const std::string line = buf.substr(lineStart, lineEnd - lineStart);
-    const size_t colon = line.find(':');
-    if (colon != std::string::npos) {
-      const std::string key = toLowerAscii(trimSpaces(line.substr(0, colon)));
-      if (key == needle)
-        return trimSpaces(line.substr(colon + 1));
-    }
-
-    lineStart = lineEnd + 2;
-  }
-
-  return "";
-}
