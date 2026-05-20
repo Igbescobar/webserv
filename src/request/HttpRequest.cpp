@@ -164,7 +164,6 @@ void HttpRequest::parseHeaderLine(const std::string &headerLine) {
     return;
   }
   this->headers[key] = trim(headerLine.substr(valueStart));
-  std::cout<<key<<": "<<this->headers[key]<<"\n";
 }
 
 void HttpRequest::parseHeaders() {
