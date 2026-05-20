@@ -231,16 +231,23 @@ void HttpRequest::append(const std::string &chunk) {
   if (pos != std::string::npos && getVersion().empty()) {
     parseRequestLine();
     if (state == ERROR)
+    {
+      printState();
       return;
+    }
   }
   if (pos1 != std::string::npos && getHeaders().empty()) {
     parseHeaders();
     if (state == ERROR)
+    {
+      printState();
       return;
+    }
   }
   if (!getHeaders().empty() && isBodyComplete()) {
     parseBody();
   }
+  printState();
 }
 
 void HttpRequest::printState() {

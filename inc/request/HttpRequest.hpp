@@ -32,7 +32,6 @@ private:
   void	parseChunkedBody(size_t pos);
   void	checkRequestLine();
   void	checkRequestHeaders();
-  void  checkIfLineComplete(std::string chunck);
   void	printState();
   bool	isBodyComplete();
 

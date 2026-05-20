@@ -4,7 +4,7 @@
   # Request line
   printf "POST "
   sleep 1
-  printf "/ HTTP/1.1\r\n"
+  printf "/ HTTP/1.0\r\n"
   sleep 1
   # Headers uno por uno
   printf "Host: localhost:8080\r\n"
