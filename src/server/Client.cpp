@@ -17,10 +17,7 @@ Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
   requestSize = 0;
 }
 
-Client::~Client() {
-  close(clientFd);
-  epoll.remove(clientFd);
-}
+Client::~Client() { close(clientFd); }
 
 bool Client::handleEvent(uint32_t eventsMask) {
   updateActivity();
