@@ -31,6 +31,9 @@ void HttpResponse::setStatusMessage(int code) {
   case 201:
     this->statusMessage = "Created";
     break;
+  case 204:
+    this->statusMessage = "No Content";
+    break;
   case 400:
     this->statusMessage = "Bad Request";
     break;

@@ -10,4 +10,7 @@ public:
   static HttpResponse handle(const ServerConfig &config,
                              const LocationConfig *location,
                              const HttpRequest &req);
+
+private:
+  static bool statPath(const std::string &path, struct stat &st);
 };

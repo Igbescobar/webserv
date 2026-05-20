@@ -1,5 +1,6 @@
 #include "request/HttpRequest.hpp"
 #include "parser_config/ServerConfig.hpp"
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -230,10 +231,85 @@ void HttpRequest::parseBody() {
   state = COMPLETE;
 }
 
-ServerConfig HttpRequest::getServerConfig() { return serverConfig; }
+bool HttpRequest::isBodyComplete() {
+  if (getHeader("transfer-encoding") == "chunked") {
+    return buf.find("0\r\n\r\n") != std::string::npos;
+  }
+  if (!getHeader("content-length").empty()) {
+    size_t bodyStart = buf.find(DELIMETER) + 4;
+    size_t length = std::strtoul(getHeader("content-length").c_str(), NULL, 10);
+    return buf.size() - bodyStart >= length;
+  }
+  return true;
+}
+
+void HttpRequest::append(const std::string &chunk) {
+  buf += chunk;
+  print();
+  size_t pos = buf.find("\r\n");
+  size_t pos1 = buf.find(DELIMETER);
+  if (pos != std::string::npos && getVersion().empty()) {
+    parseRequestLine();
+    if (state == ERROR) {
+      print();
+      return;
+    }
+  }
+  if (pos1 != std::string::npos && getHeaders().empty()) {
+    parseHeaders();
+    if (state == ERROR) {
+      print();
+      return;
+    }
+  }
+  if (!getHeaders().empty() && isBodyComplete()) {
+    parseBody();
+  }
+  print();
+}
+
+void HttpRequest::print() const {
+  std::cout << "=== HttpRequest ===\n";
+  std::cout << "State:      "
+            << (state == INCOMPLETE ? "INCOMPLETE"
+                : state == COMPLETE ? "COMPLETE"
+                                    : "ERROR")
+            << "\n";
+  std::cout << "ErrorCode:  " << errorCode << "\n";
+  std::cout << "Method:     " << method << "\n";
+  std::cout << "URI:        " << uri << "\n";
+  std::cout << "Version:    " << version << "\n";
+  std::cout << "Headers:\n";
+  for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+       it != headers.end(); ++it)
+    std::cout << "  " << it->first << ": " << it->second << "\n";
+  std::cout << "Body:       " << body << "\n";
+  std::cout << "Buf size:   " << buf.size() << "\n";
+}
+
+const std::string &HttpRequest::getMethod() const { return this->method; }
+const std::string &HttpRequest::getUri() const { return this->uri; }
+const std::string &HttpRequest::getVersion() const { return this->version; }
+const std::string &HttpRequest::getBody() const { return this->body; }
+const std::string &HttpRequest::getHeader(const std::string &key) const {
+  static const std::string empty = "";
+  std::map<std::string, std::string>::const_iterator it = headers.find(key);
+  if (it == headers.end()) {
+    return empty;
+  }
+  return it->second;
+}
+
+const std::map<std::string, std::string> &HttpRequest::getHeaders() const {
+  return this->headers;
+}
+
+const ServerConfig &HttpRequest::getServerConfig() const {
+  return serverConfig;
+}
 
 t_state HttpRequest::getState() const { return state; }
 
 int HttpRequest::getErrorCode() const { return errorCode; }
 
-std::string HttpRequest::getRequest() { return buf; }
+const std::string &HttpRequest::getRequest() const { return buf; }
