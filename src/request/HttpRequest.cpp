@@ -225,6 +225,7 @@ bool HttpRequest::isBodyComplete() {
 
 void HttpRequest::append(const std::string &chunk) {
   buf += chunk;
+  printState();
   size_t pos = buf.find("\r\n");
   size_t pos1 = buf.find(DELIMETER);
   if (pos != std::string::npos && getVersion().empty()) {

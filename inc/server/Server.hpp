@@ -34,7 +34,6 @@ private:
 public:
   Server(const ConfigParser &conf);
   ~Server();
-  ConfigParser	getGlobalConfig(); 
   void run();
   static void sigintHandler(int signum);
 };
