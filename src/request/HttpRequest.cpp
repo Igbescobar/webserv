@@ -41,10 +41,12 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
 void HttpRequest::checkRequestLine() {
   if (method != "GET" && method != "POST" && method != "DELETE" &&
       method != "HEAD") {
+    errorCode = 501;
     state = ERROR;
     return;
   }
-  if (version != "HTTP/1.0") {
+  if (version != "HTTP/1.0" && version != "HTTP/1.1") {
+    errorCode = 505;
     state = ERROR;
     return;
   }
@@ -52,32 +54,49 @@ void HttpRequest::checkRequestLine() {
 
 void HttpRequest::checkRequestHeaders() {
   if (getHeader("host").empty())
+  {
+    errorCode = 400;
     state = ERROR;
+    return;
+  }
+  if (getHeader("host").find(' ') != std::string::npos) {
+    errorCode = 400;
+    state = ERROR;
+    return;
+  }
   if ((method == "GET" || method == "DELETE") &&
       (!getHeader("content-length").empty() ||
        !getHeader("transfer-encoding").empty())) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
   if (method == "POST" && getHeader("content-length").empty() &&
       getHeader("transfer-encoding").empty()) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
   const std::string &cl = getHeader("content-length");
   for (size_t i = 0; i < cl.size(); i++)
     if (!isdigit(cl[i]))
+    {
+      errorCode = 400;	    
       state = ERROR;
+      return;
+    }
 }
 
 void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
   size_t first = requestLine.find(" ");
   if (first == std::string::npos) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
   size_t second = requestLine.find(" ", first + 1);
   if (second == std::string::npos) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
@@ -90,6 +109,7 @@ void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
 void HttpRequest::parseRequestLine() {
   size_t end = buf.find("\r\n");
   if (end == std::string::npos) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
@@ -127,11 +147,13 @@ void HttpRequest::parseHeaderLine(const std::string &headerLine) {
     return;
   size_t colonPos = headerLine.find(":");
   if (colonPos == std::string::npos) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
   std::string key = headerLine.substr(0, colonPos);
   if (!isValidHeaderKey(key)) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
@@ -142,15 +164,18 @@ void HttpRequest::parseHeaderLine(const std::string &headerLine) {
     return;
   }
   this->headers[key] = trim(headerLine.substr(valueStart));
+  std::cout<<key<<": "<<this->headers[key]<<"\n";
 }
 
 void HttpRequest::parseHeaders() {
   size_t headerEnd = buf.find(DELIMETER);
   if (headerEnd == std::string::npos) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
   if (headerStart > headerEnd) {
+    errorCode = 400;
     state = ERROR;
     return;
   }
@@ -178,6 +203,7 @@ void HttpRequest::parseChunkedBody(size_t pos) {
     size_t chunkSize =
         std::strtoul(buf.substr(pos, chunkSizeEnd - pos).c_str(), &endptr, 16);
     if (*endptr != '\0') {
+      errorCode = 400;
       state = ERROR;
       return;
     }
@@ -257,6 +283,7 @@ void HttpRequest::printState() {
     std::cout << "COMPLETE\n";
   else
     std::cout << "ERROR\n";
+  std::cout<<errorCode<<"\n";
 }
 
 const std::string &HttpRequest::getMethod() const { return this->method; }
