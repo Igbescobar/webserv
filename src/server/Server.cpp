@@ -1,4 +1,5 @@
 #include "server/Server.hpp"
+#include <iostream>
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
