@@ -28,8 +28,12 @@ HttpResponse ResponseHandler::handle() {
   if (handleRedirect(location, redirection))
     return redirection;
 
-  if (method == "GET")
-    return FileResponder::handleGet(config, location, *req);
+  if (method == "GET" || method == "HEAD") {
+    HttpResponse resp = FileResponder::handleGet(config, location, *req);
+    if (method == "HEAD")
+      resp.clearBody();
+    return resp;
+  }
 
   if (method == "POST")
     return FileResponder::handlePost(config, location, *req);
@@ -45,18 +49,29 @@ bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
   if (location == NULL || location->getAllowedMethods().empty())
     return true;
 
+  bool getMethod = false;
+
   const std::vector<std::string> &allowed = location->getAllowedMethods();
+
   for (size_t i = 0; i < allowed.size(); i++) {
     if (allowed[i] == method)
       return true;
+    if (allowed[i] == "GET")
+      getMethod = true;
   }
+  if (method == "HEAD" && getMethod)
+    return true;
   return false;
 }
 
 bool ResponseHandler::handleRedirect(const LocationConfig *location,
                                      HttpResponse &response) const {
   if (location != NULL && !location->getReturnTarget().empty()) {
-    response.setStatusCode(301);
+    int code = location->getReturnCode();
+    if (code == 0)
+      code = 301;
+
+    response.setStatusCode(code);
     response.setHeader("Location", location->getReturnTarget());
     return true;
   }

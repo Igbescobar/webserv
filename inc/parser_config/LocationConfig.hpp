@@ -19,6 +19,7 @@ public:
   void setUploadPath(const std::string &uploadPath);
   void setClientMaxBodySize(const long &size);
   void addCgiPassExtensions(const std::string &extension);
+  void setReturnCode(int code);
 
   const std::string &getPattern() const;
   const std::string &getRoot() const;
@@ -29,6 +30,7 @@ public:
   const std::string &getUploadPath() const;
   long getClientMaxBodySize() const;
   const std::vector<std::string> &getCgiPassExtensions() const;
+  int getReturnCode() const;
 
 private:
   std::string pattern;
@@ -36,6 +38,7 @@ private:
   std::vector<std::string> index;
   bool autoindex;
   std::vector<std::string> allowedMethods;
+  int returnCode;
   std::string returnTarget;
   std::string uploadPath;
   long clientMaxBodySize;

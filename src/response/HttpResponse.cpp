@@ -3,7 +3,7 @@
 #include <sstream>
 
 HttpResponse::HttpResponse()
-    : version("HTTP/1.1"), statusCode(200), statusMessage("OK"),
+    : version("HTTP/1.0"), statusCode(200), statusMessage("OK"),
       isBuilt(false) {}
 
 HttpResponse::HttpResponse(const HttpResponse &other) { *this = other; }
@@ -52,10 +52,12 @@ void HttpResponse::setStatusMessage(int code) {
 void HttpResponse::setStatusCode(int code) {
   this->statusCode = code;
   setStatusMessage(code);
+  this->isBuilt = false;
 }
 
 void HttpResponse::setHeader(const std::string &key, const std::string &value) {
   this->headers[key] = value;
+  this->isBuilt = false;
 }
 
 void HttpResponse::setBody(const std::string &body) {
@@ -64,6 +66,8 @@ void HttpResponse::setBody(const std::string &body) {
   std::stringstream ss;
   ss << this->body.length();
   setHeader("Content-Length", ss.str());
+
+  this->isBuilt = false;
 }
 
 std::string HttpResponse::toString() const {
@@ -89,4 +93,9 @@ std::string HttpResponse::getResponse() {
     this->isBuilt = true;
   }
   return this->rawResponse;
+}
+
+void HttpResponse::clearBody() {
+  this->body.clear();
+  this->isBuilt = false;
 }
