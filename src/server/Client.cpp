@@ -1,4 +1,5 @@
 #include "server/Client.hpp"
+#include "cgi/Cgi.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
@@ -8,11 +9,12 @@
 #include <stdexcept>
 #include <unistd.h>
 
-Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
-    : clientFd(clientSocket), epoll(epoll), serverConfig(serverConfig) {
+Client::Client(int clientSocket, Server &server,
+               const ServerConfig &serverConfig)
+    : clientFd(clientSocket), serverConfig(serverConfig), server(server) {
   request = HttpRequest(serverConfig);
   Socket::setNonBlocking(clientSocket);
-  epoll.addRead(clientSocket);
+  server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;
 }
@@ -41,19 +43,28 @@ bool Client::read(int clientFd) {
   buffer[bytesRead] = '\0';
   request.append(buffer);
 
-  switch (request.getState()) {
-  case INCOMPLETE:
+  t_state requestState = request.getState();
+
+  // TODO: not readable code
+  if (requestState == INCOMPLETE)
     return true;
-  case COMPLETE:
-    responseStr = HttpResponse(serverConfig, request).getResponse();
-    epoll.modWrite(clientFd);
+  else if (requestState == COMPLETE) {
+    HttpResponse response(serverConfig, request);
+    if (response.isCgi()) {
+      // TODO
+      Cgi cgi(server, response.getCgiPath());
+      return true;
+    } else {
+      responseStr = response.getResponse();
+      server.getEpoll().modWrite(clientFd);
+    }
     return true;
-  case ERROR:
+  } else if (requestState == ERROR) {
     responseStr =
         HttpResponse(serverConfig, request.getErrorCode()).getResponse();
-    epoll.modWrite(clientFd);
+    server.getEpoll().modWrite(clientFd);
     return true;
-  default:
+  } else {
     throw std::runtime_error("unknown request state");
   }
 }

@@ -1,5 +1,4 @@
 #include "server/Server.hpp"
-#include <iostream>
 #include "parser/config/ConfigParser.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
@@ -77,6 +76,8 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
       clientMap.erase(triggeredFd);
       delete clientToDelete;
     }
+  } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
+    // TODO: cgi handle
   } else {
     handleServer(triggeredFd);
   }
@@ -102,7 +103,7 @@ void Server::handleServer(int serverFd) {
 
   try {
     clientMap[clientFd] =
-        new Client(clientFd, epoll, getServerConfig(serverFd));
+        new Client(clientFd, *this, getServerConfig(serverFd));
   } catch (std::exception &e) {
     close(clientFd);
     throw;
@@ -139,3 +140,7 @@ void Server::sweepTimeouts() {
     }
   }
 }
+
+Epoll &Server::getEpoll() { return epoll; }
+
+std::map<int, Cgi *> &Server::getCgiMap() { return cgiMap; }

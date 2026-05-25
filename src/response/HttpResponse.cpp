@@ -34,3 +34,7 @@ std::string HttpResponse::getResponse() { return response; }
 void HttpResponse::erase(int bytes) { response.erase(0, bytes); }
 
 bool HttpResponse::empty() { return response.empty(); }
+
+bool HttpResponse::isCgi() { return true; }
+
+std::string HttpResponse::getCgiPath() { return ""; }

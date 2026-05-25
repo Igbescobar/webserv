@@ -29,4 +29,6 @@ public:
   std::string getResponse();
   void erase(int bytes);
   bool empty();
+  bool isCgi();
+  std::string getCgiPath();
 };
