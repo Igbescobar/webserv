@@ -24,6 +24,7 @@ private:
   time_t connectionStart;
   time_t lastActivity;
   Server &server;
+  Cgi *cgi;
 
   bool read(int clientFd);
   bool write(int clientFd);

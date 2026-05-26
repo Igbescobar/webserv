@@ -16,6 +16,11 @@ HttpResponse::HttpResponse(ServerConfig serverConfig, int errorCode)
   response = RESPONSE;
 }
 
+HttpResponse::HttpResponse(ServerConfig serverConfig, std::string cgiOutput)
+    : serverConfig(serverConfig) {
+  response = STATUS_LINE + cgiOutput;
+}
+
 HttpResponse::HttpResponse(const HttpResponse &other) {
   serverConfig = other.serverConfig;
   request = other.request;

@@ -12,7 +12,8 @@
 
 Client::Client(int clientSocket, Server &server,
                const ServerConfig &serverConfig)
-    : clientFd(clientSocket), serverConfig(serverConfig), server(server) {
+    : clientFd(clientSocket), serverConfig(serverConfig), server(server),
+      cgi(NULL) {
   request = HttpRequest(serverConfig);
   setNonBlocking(clientSocket);
   setCloseOnExec(clientSocket);
@@ -54,12 +55,11 @@ bool Client::read(int clientFd) {
     HttpResponse response(serverConfig, request);
     if (response.isCgi()) {
       // TODO
-      Cgi cgi(server, response.getCgiPath());
-      return true;
+      cgi = new Cgi(server, response.getCgiPath());
     } else {
       responseStr = response.getResponse();
-      server.getEpoll().modWrite(clientFd);
     }
+    server.getEpoll().modWrite(clientFd);
     return true;
   } else if (requestState == ERROR) {
     responseStr =
@@ -72,6 +72,12 @@ bool Client::read(int clientFd) {
 }
 
 bool Client::write(int clientFd) {
+  if (responseStr.empty()) {
+    if (cgi->getState() == INCOMPLETE)
+      return true;
+    responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
+  }
+
   int bytesWritten;
 
   bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
