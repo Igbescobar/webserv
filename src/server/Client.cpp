@@ -4,6 +4,7 @@
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
 #include "server/Socket.hpp"
+#include "utils.hpp"
 #include <ctime>
 #include <iostream>
 #include <stdexcept>
@@ -13,7 +14,8 @@ Client::Client(int clientSocket, Server &server,
                const ServerConfig &serverConfig)
     : clientFd(clientSocket), serverConfig(serverConfig), server(server) {
   request = HttpRequest(serverConfig);
-  Socket::setNonBlocking(clientSocket);
+  setNonBlocking(clientSocket);
+  setCloseOnExec(clientSocket);
   server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;

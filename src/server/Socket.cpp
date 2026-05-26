@@ -1,4 +1,5 @@
 #include "server/Socket.hpp"
+#include "utils.hpp"
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -14,6 +15,7 @@ Socket::Socket() {}
 Socket::Socket(std::string ip, int port) {
   fd = socketCreate();
   setNonBlocking(fd);
+  setCloseOnExec(fd);
   socketBind(fd, ip, port);
   socketListen(fd);
 }
@@ -71,8 +73,3 @@ unsigned int Socket::IPToNum(std::string ip) {
 }
 
 int Socket::getFd() { return fd; }
-
-void Socket::setNonBlocking(int fd) {
-  if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
-    throw std::runtime_error("fcntl: " + std::string(strerror(errno)));
-}
