@@ -13,7 +13,7 @@ HttpResponse DeleteResponder::handle(const ServerConfig &config,
   const std::string uri = req.getUri();
 
   if (!FileResponder::isSafeUri(uri))
-    return ErrorResponseBuilder::build(config, req, 403);
+    return ErrorResponseBuilder::build(config, req, 400);
 
   const std::string docRoot = FileResponder::getDocumentRoot(config, location);
   const std::string fsPath = ResponseIO::joinPath(docRoot, uri);

@@ -18,10 +18,10 @@ private:
   const HttpRequest *req;
   const int errorCode;
 
-  HttpResponse handleGet();
-
   bool isMethodAllowed(const LocationConfig *location,
                        const std::string &method) const;
   bool handleRedirect(const LocationConfig *location,
                       HttpResponse &response) const;
+
+  static std::string buildAllowHeader(const LocationConfig *location);
 };

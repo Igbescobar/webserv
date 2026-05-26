@@ -34,8 +34,14 @@ void HttpResponse::setStatusMessage(int code) {
   case 204:
     this->statusMessage = "No Content";
     break;
+  case 301:
+    this->statusMessage = "Moved Permanently";
+    break;
   case 400:
     this->statusMessage = "Bad Request";
+    break;
+  case 403:
+    this->statusMessage = "Forbidden";
     break;
   case 404:
     this->statusMessage = "Not Found";
@@ -43,8 +49,17 @@ void HttpResponse::setStatusMessage(int code) {
   case 405:
     this->statusMessage = "Method Not Allowed";
     break;
+  case 413:
+    this->statusMessage = "Payload Too Large";
+    break;
   case 500:
     this->statusMessage = "Internal Server Error";
+    break;
+  case 501:
+    this->statusMessage = "Not Implemented";
+    break;
+  case 505:
+    this->statusMessage = "HTTP Version Not Supported";
     break;
   default:
     this->statusMessage = "Unknown";

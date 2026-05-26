@@ -18,11 +18,20 @@ HttpResponse ResponseHandler::handle() {
   if (req == NULL)
     return ErrorResponseBuilder::build(config, 500);
 
+  if (req->getState() == ERROR)
+    return ErrorResponseBuilder::build(config, *req, req->getErrorCode());
+
   const LocationConfig *location = config.resolveLocation(req->getUri());
 
   const std::string method = req->getMethod();
-  if (!isMethodAllowed(location, method))
-    return ErrorResponseBuilder::build(config, 405);
+
+  if (!isMethodAllowed(location, method)) {
+    HttpResponse resp = ErrorResponseBuilder::build(config, *req, 405);
+    const std::string allow = buildAllowHeader(location);
+    if (!allow.empty())
+      resp.setHeader("Allow", allow);
+    return resp;
+  }
 
   HttpResponse redirection;
   if (handleRedirect(location, redirection))
@@ -41,7 +50,7 @@ HttpResponse ResponseHandler::handle() {
   if (method == "DELETE")
     return FileResponder::handleDelete(config, location, *req);
 
-  return ErrorResponseBuilder::build(config, *req, 404);
+  return ErrorResponseBuilder::build(config, *req, 501);
 }
 
 bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
@@ -62,6 +71,36 @@ bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
   if (method == "HEAD" && getMethod)
     return true;
   return false;
+}
+
+std::string ResponseHandler::buildAllowHeader(const LocationConfig *location) {
+  if (location == NULL)
+    return "";
+
+  const std::vector<std::string> &allowed = location->getAllowedMethods();
+  if (allowed.empty())
+    return "";
+
+  std::vector<std::string> methods = allowed;
+
+  bool hasGet = false;
+  bool hasHead = false;
+  for (size_t i = 0; i < methods.size(); i++) {
+    if (methods[i] == "GET")
+      hasGet = true;
+    if (methods[i] == "HEAD")
+      hasHead = true;
+  }
+  if (hasGet && !hasHead)
+    methods.push_back("HEAD");
+
+  std::string out;
+  for (size_t i = 0; i < methods.size(); i++) {
+    if (i > 0)
+      out += ", ";
+    out += methods[i];
+  }
+  return out;
 }
 
 bool ResponseHandler::handleRedirect(const LocationConfig *location,

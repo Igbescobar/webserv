@@ -34,6 +34,9 @@ private:
   void checkRequestHeaders();
   void print() const;
   bool isBodyComplete();
+  long getBodySizeLimit() const;
+  void checkEarlyBodySizeLimit();
+  void checkOngoingBodySizeLimit();
 
 public:
   HttpRequest();

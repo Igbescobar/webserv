@@ -74,6 +74,7 @@ void HttpRequest::checkRequestHeaders() {
       state = ERROR;
       return;
     }
+  checkEarlyBodySizeLimit();
 }
 
 void HttpRequest::parseRequestLineValues(const std::string &requestLine) {
@@ -262,10 +263,53 @@ void HttpRequest::append(const std::string &chunk) {
       return;
     }
   }
+  if (!getHeaders().empty()) {
+    checkOngoingBodySizeLimit();
+    if (state == ERROR) {
+      print();
+      return;
+    }
+  }
   if (!getHeaders().empty() && isBodyComplete()) {
     parseBody();
   }
   print();
+}
+
+long HttpRequest::getBodySizeLimit() const {
+  const LocationConfig *loc = serverConfig.resolveLocation(this->getUri());
+  return loc ? loc->getClientMaxBodySize()
+             : serverConfig.getClientMaxBodySize();
+}
+
+void HttpRequest::checkEarlyBodySizeLimit() {
+  const std::string &cl = getHeader("content-length");
+  if (cl.empty())
+    return;
+
+  long limit = getBodySizeLimit();
+  if (limit > -1) {
+    long contentLength = std::strtol(cl.c_str(), NULL, 10);
+    if (contentLength > limit) {
+      errorCode = 413;
+      state = ERROR;
+    }
+  }
+}
+
+void HttpRequest::checkOngoingBodySizeLimit() {
+
+  long limit = getBodySizeLimit();
+  if (limit > -1) {
+    size_t bodyStart = buf.find(DELIMETER);
+    if (bodyStart != std::string::npos) {
+      size_t currentBodySize = buf.size() - (bodyStart + 4);
+      if (currentBodySize > static_cast<size_t>(limit)) {
+        errorCode = 413;
+        state = ERROR;
+      }
+    }
+  }
 }
 
 void HttpRequest::print() const {
