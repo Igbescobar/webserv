@@ -27,7 +27,7 @@ private:
 public:
   Cgi(Server &server, std::string path);
 
-  bool handleEvent();
+  void handleEvent();
 
   std::string getOutput();
   t_state getState();
