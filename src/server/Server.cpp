@@ -72,12 +72,11 @@ void Server::handleEvents(int n) {
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
+    if (!clientMap[triggeredFd]->handleEvent(eventsMask))
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
-    }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
-    // TODO: cgi handle
-    cgiMap[triggeredFd]->handleEvent();
+    if (!cgiMap[triggeredFd]->handleEvent())
+      deleteMapItem<std::map<int, Cgi *> >(clientMap, triggeredFd);
   } else {
     handleServer(triggeredFd);
   }

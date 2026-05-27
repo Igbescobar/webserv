@@ -17,13 +17,14 @@ Cgi::Cgi(Server &server, std::string path)
   server.getEpoll().addRead(pipefd[0]);
 }
 
-void Cgi::handleEvent() {
+bool Cgi::handleEvent() {
   char buf[BUF_SIZE + 1];
 
   int bytesRead = read(pipefd[0], buf, BUF_SIZE);
   buf[bytesRead] = '\0';
   output += buf;
   state = COMPLETE;
+  return true;
 }
 
 std::string Cgi::getOutput() { return output; }
