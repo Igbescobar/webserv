@@ -29,6 +29,8 @@ private:
   bool read(int clientFd);
   bool write(int clientFd);
 
+  void handleRequestState(t_state state);
+
   void updateActivity();
 
 public:

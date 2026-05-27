@@ -39,36 +39,30 @@ bool Client::read(int clientFd) {
 
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
   requestSize += bytesRead;
-  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT) {
+  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT)
     return false;
-  }
 
   buffer[bytesRead] = '\0';
   request.append(buffer);
 
-  t_state requestState = request.getState();
+  handleRequestState(request.getState());
+  return true;
+}
 
-  // TODO: not readable code
-  if (requestState == INCOMPLETE)
-    return true;
-  else if (requestState == COMPLETE) {
+void Client::handleRequestState(t_state state) {
+  if (state == COMPLETE) {
     HttpResponse response(serverConfig, request);
-    if (response.isCgi()) {
-      // TODO
+    if (response.isCgi())
       cgi = new Cgi(server, response.getCgiPath());
-    } else {
+    else
       responseStr = response.getResponse();
-    }
     server.getEpoll().modWrite(clientFd);
-    return true;
-  } else if (requestState == ERROR) {
+  } else if (state == ERROR) {
     responseStr =
         HttpResponse(serverConfig, request.getErrorCode()).getResponse();
     server.getEpoll().modWrite(clientFd);
-    return true;
-  } else {
+  } else
     throw std::runtime_error("unknown request state");
-  }
 }
 
 bool Client::write(int clientFd) {
