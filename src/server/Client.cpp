@@ -66,25 +66,25 @@ void Client::handleRequestState(t_state state) {
 }
 
 bool Client::write(int clientFd) {
-  if (responseStr.empty()) {
+  if (cgi) {
     if (cgi->getState() == INCOMPLETE)
       return true;
     responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
+    delete cgi;
+    cgi = NULL;
   }
 
-  int bytesWritten;
-
-  bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
+  int bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
   if (bytesWritten <= 0) {
     return false;
   }
 
   responseStr.erase(0, bytesWritten);
 
-  if (responseStr.empty()) {
-    return false;
-  }
-  return true;
+  if (!responseStr.empty())
+    return true;
+
+  return false;
 }
 
 void Client::updateActivity() { lastActivity = std::time(NULL); }
