@@ -5,6 +5,7 @@
 #include "response/HttpResponse.hpp"
 #include "server/Client.hpp"
 #include "server/Socket.hpp"
+#include "utils.hpp"
 #include <cerrno>
 #include <csignal>
 #include <cstring>
@@ -72,9 +73,7 @@ void Server::handleEvents(int n) {
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
-      Client *clientToDelete = clientMap[triggeredFd];
-      clientMap.erase(triggeredFd);
-      delete clientToDelete;
+      deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
     // TODO: cgi handle
