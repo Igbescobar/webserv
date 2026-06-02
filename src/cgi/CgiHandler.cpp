@@ -15,7 +15,8 @@ std::string	CgiHandler::execute()
 	//TODO:search child proccesses and pipes
 	//TODO:make sure it executes with different files
 
-	this->request.getMethod()
+	std::string method =this->request.getMethod();
+	std::string uri
 
 	char *envp[] = {
 		"REQUEST_METHOD=POST",
@@ -23,7 +24,7 @@ std::string	CgiHandler::execute()
 		"QUERY_STRNG=",
 		NULL
 	};
-	execve(script_path, argv, envp)
+	execve(script_path, argv, envp);
 	return scriptPath;
 }
 	/*int	stdinpipe[2];
