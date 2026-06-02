@@ -2,6 +2,7 @@
 #define CGIHANDLER_HPP
 #include "../inc/request/HttpRequest.hpp"
 #include <string>
+#include <iostream>
 class	CgiHandler
 {
 	private:

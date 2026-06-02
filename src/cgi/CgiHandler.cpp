@@ -16,15 +16,16 @@ std::string	CgiHandler::execute()
 	//TODO:make sure it executes with different files
 
 	std::string method =this->request.getMethod();
-	std::string uri
+	std::string uri = this->request.getUri();
 
-	char *envp[] = {
+	const char *envp[] = {
 		"REQUEST_METHOD=POST",
 		"CONTENT_LENGHT=16",
 		"QUERY_STRNG=",
 		NULL
 	};
-	execve(script_path, argv, envp);
+	std::cout<<envp[0]<<"\n";
+	//execve(script_path, argv, envp);
 	return scriptPath;
 }
 	/*int	stdinpipe[2];
