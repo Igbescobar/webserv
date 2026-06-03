@@ -1,4 +1,6 @@
 #include "../inc/cgi/CgiHandler.hpp"
+#include "../inc/parser/config/LocationConfig.hpp"
+
 CgiHandler::CgiHandler(HttpRequest &request, LocationConfig &location): request(request), location(location)
 {}
 
@@ -11,13 +13,24 @@ CgiHandler::~CgiHandler()
 }*/
 std::string	CgiHandler::execute()
 {
+	LocationConfig location;
 	//TODO:start studying of cgi execution
 	//TODO:search child proccesses and pipes
 	//TODO:make sure it executes with different files
 
 	std::string method =this->request.getMethod();
 	std::string uri = this->request.getUri();
-
+	size_t dotPos = uri.find_last_of('.');
+	if(dotPos == std::string::npos)
+	{
+		std::cout<<"Does not have extension\n";
+		//is not CGI
+	}
+	std::string ext = uri.substr(dotPos);
+	std::cout<<ext<<"\n";
+	const std::vector<std::string> &cgiExts = location.getCgiPassExtensions();
+	for(size_t i = 0; i < cgiExts.size(); i++)
+		std::cout<<cgiExts[i]<<"\n";
 	const char *envp[] = {
 		"REQUEST_METHOD=POST",
 		"CONTENT_LENGHT=16",
