@@ -23,6 +23,7 @@ private:
   bool read(int clientFd);
   bool write(int clientFd);
 
+  bool isCGI();
   void updateActivity();
 
 public:

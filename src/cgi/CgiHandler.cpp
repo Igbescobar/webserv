@@ -18,27 +18,10 @@ std::string	CgiHandler::execute()
 	//TODO:search child proccesses and pipes
 	//TODO:make sure it executes with different files
 
-	std::string method =this->request.getMethod();
-	std::string uri = this->request.getUri();
-	size_t dotPos = uri.find_last_of('.');
-	if(dotPos == std::string::npos)
-	{
-		std::cout<<"Does not have extension\n";
-		//is not CGI
-	}
-	std::string ext = uri.substr(dotPos);
-	std::cout<<ext<<"\n";
-	const std::vector<std::string> &cgiExts = location.getCgiPassExtensions();
-	for(size_t i = 0; i < cgiExts.size(); i++)
-		std::cout<<cgiExts[i]<<"\n";
-	const char *envp[] = {
-		"REQUEST_METHOD=POST",
-		"CONTENT_LENGHT=16",
-		"QUERY_STRNG=",
-		NULL
-	};
-	std::cout<<envp[0]<<"\n";
-	//execve(script_path, argv, envp);
+	//std::vector<std::string> env;
+	//env.push_back("REQUEST_METHOD=" + request.getMethod());
+	//std::cout<<envp[0]<<"\n";
+	//execve(scriptPath, argv, envp);
 	return scriptPath;
 }
 	/*int	stdinpipe[2];

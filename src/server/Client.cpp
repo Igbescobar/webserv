@@ -2,6 +2,7 @@
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "cgi/CgiHandler.hpp"
 #include "server/Socket.hpp"
 #include <ctime>
 #include <iostream>
@@ -28,6 +29,32 @@ bool Client::handleEvent(uint32_t eventsMask) {
   return false;
 }
 
+bool	Client::isCGI()
+{
+  std::string method = request.getMethod();
+  std::string uri = request.getUri();
+  size_t dotPos = uri.find_last_of('.');
+   if(dotPos == std::string::npos)
+   {
+          std::cout<<"Does not have extension\n";
+          return false;
+   }
+   std::string ext = uri.substr(dotPos);
+   std::cout<<ext<<"\n";
+   const std::vector<LocationConfig> &locations = serverConfig.getLocations();
+   for(size_t i = 0; i < locations.size(); i++)
+   {
+          const std::vector<std::string> &exts = locations[i].getCgiPassExtensions();
+          for(size_t j = 0; j < exts.size(); j++)
+          {
+             std::cout<<exts[j]<<"\n";
+             if (exts[j] == ext)
+                return true;
+          }
+   }
+   return false;
+}
+
 bool Client::read(int clientFd) {
   char buffer[BUF_SIZE + 1];
   int bytesRead;
@@ -45,6 +72,8 @@ bool Client::read(int clientFd) {
   case INCOMPLETE:
     return true;
   case COMPLETE:
+    //if(isCGI())
+    //responseStr = CgiHandler();
     responseStr = HttpResponse(serverConfig, request).getResponse();
     epoll.modWrite(clientFd);
     return true;
