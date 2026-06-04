@@ -12,6 +12,7 @@ class	CgiHandler
 		char	**buildEnv();
 		char	**builkdArgv();
 		void	setupChildProcess(int pipefd[2]);
+		std::string	getInterpreter(const std::string &ext);
 	public:
 		CgiHandler(HttpRequest &request, LocationConfig &location);
 		~CgiHandler();

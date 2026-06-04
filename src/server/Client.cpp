@@ -34,6 +34,7 @@ bool	Client::isCGI()
   std::string method = request.getMethod();
   std::string uri = request.getUri();
   size_t dotPos = uri.find_last_of('.');
+  std::cout<<uri<<"\n";
    if(dotPos == std::string::npos)
    {
           std::cout<<"Does not have extension\n";
@@ -72,8 +73,12 @@ bool Client::read(int clientFd) {
   case INCOMPLETE:
     return true;
   case COMPLETE:
-    //if(isCGI())
-    //responseStr = CgiHandler();
+    if(isCGI())
+    {
+        std::vector<LocationConfig> location = serverConfig.getLocations();
+        responseStr = CgiHandler(request, location[clientFd]).execute();
+    }
+    else
     responseStr = HttpResponse(serverConfig, request).getResponse();
     epoll.modWrite(clientFd);
     return true;
