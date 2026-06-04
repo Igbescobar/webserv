@@ -8,5 +8,4 @@ public:
                                const std::string &dirPath);
 
 private:
-  //   static std::string escapeHtml(const std::string &in);
 };

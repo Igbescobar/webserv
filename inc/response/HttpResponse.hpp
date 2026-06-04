@@ -4,7 +4,6 @@
 #include <string>
 
 class ServerConfig;
-class IRequest;
 
 class HttpResponse {
 private:
