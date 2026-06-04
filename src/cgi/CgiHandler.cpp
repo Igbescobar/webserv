@@ -18,10 +18,19 @@ std::string	CgiHandler::execute()
 	//TODO:search child proccesses and pipes
 	//TODO:make sure it executes with different files
 
-	//std::vector<std::string> env;
-	//env.push_back("REQUEST_METHOD=" + request.getMethod());
-	//std::cout<<envp[0]<<"\n";
-	//execve(scriptPath, argv, envp);
+	std::vector<std::string> env;
+	env.push_back("REQUEST_METHOD=" + request.getMethod());
+	env.push_back("CONTENT_LENGTH=" + request.getHeader("content-length"));
+	env.push_back("CONTENT_TYPE=" + request.getHeader("content-type"));
+
+	std::cout<<envp[0]<<"\n";
+	std::vector<char *> envp;
+	for(size_t i = 0; i < env.size(); i++)
+	{
+		envp.push_back(env[i].c_str());
+	}
+	envp.push_back(NULL);
+	execve(scriptPath, argv, envp);
 	return scriptPath;
 }
 	/*int	stdinpipe[2];
