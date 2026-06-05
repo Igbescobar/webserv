@@ -7,14 +7,14 @@ class	CgiHandler
 {
 	private:
 		HttpRequest &request;
-		LocationConfig &location;
+		const LocationConfig &location;
 		std::string scriptPath;
 		char	**buildEnv();
 		char	**builkdArgv();
 		void	setupChildProcess(int pipefd[2]);
 		std::string	getInterpreter(const std::string &ext);
 	public:
-		CgiHandler(HttpRequest &request, LocationConfig &location);
+		CgiHandler(HttpRequest &request, const LocationConfig &location);
 		~CgiHandler();
 		std::string execute();
 };

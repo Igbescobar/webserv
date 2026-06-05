@@ -24,6 +24,7 @@ private:
   bool write(int clientFd);
 
   bool isCGI();
+  const LocationConfig *getMatchingLocation(const std::string &uri);
   void updateActivity();
 
 public:

@@ -40,8 +40,8 @@ bool	Client::isCGI()
           std::cout<<"Does not have extension\n";
           return false;
    }
-   std::string ext = uri.substr(dotPos);
-   std::cout<<ext<<"\n";
+   size_t questionpos = uri.find('?', dotPos);
+   std::string ext = uri.substr(dotPos, questionpos - dotPos);
    const std::vector<LocationConfig> &locations = serverConfig.getLocations();
    for(size_t i = 0; i < locations.size(); i++)
    {
@@ -54,6 +54,20 @@ bool	Client::isCGI()
           }
    }
    return false;
+}
+
+const LocationConfig *Client::getMatchingLocation(const std::string &uri)
+{
+    const std::vector<LocationConfig> &locations = serverConfig.getLocations();
+    size_t secondSlash = uri.find('/', 1);
+    std::string segment = uri.substr(0, secondSlash);
+    
+    for (size_t i = 0; i < locations.size(); i++)
+    {
+        if (locations[i].getPattern() == segment)
+            return &locations[i];
+    }
+    return NULL;
 }
 
 bool Client::read(int clientFd) {
@@ -75,11 +89,19 @@ bool Client::read(int clientFd) {
   case COMPLETE:
     if(isCGI())
     {
-        std::vector<LocationConfig> location = serverConfig.getLocations();
-        responseStr = CgiHandler(request, location[clientFd]).execute();
+        const LocationConfig *loc = getMatchingLocation(request.getUri());
+        if(loc == NULL)
+        {
+            responseStr = HttpResponse(serverConfig, 404).getResponse();
+            epoll.modWrite(clientFd);
+            return true;
+        }
+        responseStr = CgiHandler(request, *loc).execute();
     }
     else
-    responseStr = HttpResponse(serverConfig, request).getResponse();
+    {
+        responseStr = HttpResponse(serverConfig, request).getResponse();
+    }
     epoll.modWrite(clientFd);
     return true;
   case ERROR:
