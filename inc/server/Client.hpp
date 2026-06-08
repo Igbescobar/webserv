@@ -7,7 +7,7 @@
 #define BUF_SIZE 4096
 #define IDLE_LIMIT 30
 #define ABSOLUTE_LIMIT 180
-#define REQUEST_LIMIT 10000000
+#define REQUEST_LIMIT 200000000
 
 class Client {
 private:

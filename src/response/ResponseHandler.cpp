@@ -58,18 +58,12 @@ bool ResponseHandler::isMethodAllowed(const LocationConfig *location,
   if (location == NULL || location->getAllowedMethods().empty())
     return true;
 
-  bool getMethod = false;
-
   const std::vector<std::string> &allowed = location->getAllowedMethods();
 
   for (size_t i = 0; i < allowed.size(); i++) {
     if (allowed[i] == method)
       return true;
-    if (allowed[i] == "GET")
-      getMethod = true;
   }
-  if (method == "HEAD" && getMethod)
-    return true;
   return false;
 }
 

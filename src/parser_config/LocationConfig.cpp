@@ -8,8 +8,8 @@ LocationConfig::LocationConfig(const LocationConfig &other)
     : pattern(other.pattern), root(other.root), index(other.index),
       autoindex(other.autoindex), allowedMethods(other.allowedMethods),
       returnCode(other.returnCode), returnTarget(other.returnTarget),
-      uploadPath(other.uploadPath), cgiPassExtensions(other.cgiPassExtensions) {
-}
+      uploadPath(other.uploadPath), clientMaxBodySize(other.clientMaxBodySize),
+      cgiPassExtensions(other.cgiPassExtensions) {}
 
 LocationConfig &LocationConfig::operator=(const LocationConfig &other) {
   if (this != &other) {
