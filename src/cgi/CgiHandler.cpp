@@ -11,11 +11,6 @@ CgiHandler::CgiHandler(HttpRequest &request, const LocationConfig &location): re
 CgiHandler::~CgiHandler()
 {}
 
-/*char**	CgiHandler::buildEnv()
-{
-
-}*/
-
 std::string CgiHandler::getInterpreter(const std::string &ext)
 {
     if (ext == ".py")
@@ -27,43 +22,96 @@ std::string CgiHandler::getInterpreter(const std::string &ext)
     return "";
 }
 
-std::string	CgiHandler::execute()
+std::string	CgiHandler::extractScriptPath()
 {
-	//LocationConfig location;
-	//TODO:start studying of cgi execution
-	//TODO:search child proccesses and pipes
-	//TODO:make sure it executes with different files
-
-	std::string uri = request.getUri();
-	//Getting filename
-	size_t filePosition = uri.find_last_of('/');
+	size_t filePosition = request.getUri().find_last_of('/');
 	if(filePosition == std::string::npos)
 	{
 		std::cout<<"Does not have a correct file name";
 		return "";
 	}
-	size_t queryPos = uri.find('?', filePosition);
+	size_t queryPos = request.getUri().find('?', filePosition);
 	std::string fileName = (queryPos != std::string::npos) 
-	? uri.substr(filePosition + 1, queryPos - filePosition)
-	: uri.substr(filePosition);
-	fileName.erase(0,1); 
-	std::string scriptPath = location.getRoot() + fileName;
-	std::cout<<"Script path: "<<scriptPath<<"\n";
-	//Getting extension
-	size_t dotPos = uri.find_last_of('.');
+	? request.getUri().substr(filePosition, queryPos - filePosition)
+	: request.getUri().substr(filePosition);
+	fileName.erase(0,1);
+	return  location.getRoot() + fileName;
+}
+
+std::string	CgiHandler::extractExtension()
+{
+	size_t dotPos = request.getUri().find_last_of('.');
 	if(dotPos == std::string::npos)
 	{
 		std::cout<<"Does not have a correct file extension";
 		return "";
 	}
-	size_t questionpos = uri.find('?', dotPos);
-	std::string extensionPath = uri.substr(dotPos, questionpos - dotPos);
+	size_t questionpos = request.getUri().find('?', dotPos);
+	std::string extensionPath = request.getUri().substr(dotPos, questionpos - dotPos);
 	std::cout<<"Extesion path:"<<extensionPath<<"\n";
-	std::string interpreter =getInterpreter(extensionPath);
-	std::cout<<"Interpreter: "<<interpreter<<"\n";
-	//Build argv
-	std::cout<<"SCRIPT PATH: "<<scriptPath<<"\n";
-	std::cout<<"URI: "<<uri<<"\n";
+	return extensionPath;
+}
+
+std::string CgiHandler::extractQuery()
+{
+    size_t queryPos = request.getUri().find('?');
+    return (queryPos != std::string::npos) ? request.getUri().substr(queryPos + 1) : "";
+}
+
+std::vector<std::string> CgiHandler::buildEnv()
+{
+	std::vector<std::string> env;
+	env.push_back("REQUEST_METHOD=" + request.getMethod());
+	env.push_back("CONTENT_LENGTH=" + request.getHeader("content-length"));
+	env.push_back("CONTENT_TYPE=" + request.getHeader("content-type"));
+	env.push_back("QUERY_STRING=" + query);
+	return env;
+}
+
+void	CgiHandler::setupChild(int stdinpipe[2],int stdoutpipe[2], char *argv[], char **envp)
+{
+	std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
+	chdir(scriptDir.c_str());
+	dup2(stdinpipe[0], STDIN_FILENO);
+	dup2(stdoutpipe[1], STDOUT_FILENO);
+	close(stdinpipe[1]);
+	close(stdoutpipe[0]);
+	execve(interpreter.c_str(), argv, envp);
+	exit(1);
+}
+
+std::string	CgiHandler::buildResponse(std::string &output, int stdoutpipe[2])
+{
+	char buf[BUF_SIZE];
+	int bytes;
+	while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
+		output += std::string(buf, bytes);
+	close(stdoutpipe[0]);
+	size_t sepPos = output.find("\r\n\r\n");
+	std::string cgiHeaders;
+	std::string cgiBody;
+	if (sepPos != std::string::npos)
+	{
+		cgiHeaders = output.substr(0, sepPos);
+		cgiBody = output.substr(sepPos + 4);
+	}
+	else
+		cgiBody = output;
+	std::ostringstream response;
+	response << "HTTP/1.1 200 OK\r\n";
+	response << cgiHeaders << "\r\n";
+	if (cgiHeaders.find("Content-Length") == std::string::npos)
+		response << "Content-Length: " << cgiBody.size() << "\r\n";
+	response<<"\r\n";
+	response << cgiBody;
+	return response.str();
+}
+
+std::string	CgiHandler::execute()
+{
+	scriptPath = extractScriptPath();
+	interpreter =getInterpreter(extractExtension());
+	query = extractQuery();
 	char *argv[] = 
 	{
 		const_cast<char *>(interpreter.c_str()),
@@ -71,13 +119,8 @@ std::string	CgiHandler::execute()
 		NULL
 	};
 	//Build env
-	std::vector<std::string> env;
-	//Build qurry string
-	std::string query = (queryPos != std::string::npos) ? uri.substr(queryPos + 1) : "";
-	env.push_back("REQUEST_METHOD=" + request.getMethod());
-	env.push_back("CONTENT_LENGTH=" + request.getHeader("content-length"));
-	env.push_back("CONTENT_TYPE=" + request.getHeader("content-type"));
-	env.push_back("QUERY_STRING=" + query);
+	std::vector<std::string> env = buildEnv();
+	//Build query string
 	std::vector<char *> envp;
 	std::cout<<"ENV: "<<"\n";
 	for(size_t i = 0; i < env.size(); i++)
@@ -93,18 +136,10 @@ std::string	CgiHandler::execute()
 	pipe(stdoutpipe);
 
 	pid_t pid = fork();
+	if(pid < 0)
+		return "";
 	if (pid == 0)
-	{
-		std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
-	        chdir(scriptDir.c_str());
-		//hijo (CGI)
-		dup2(stdinpipe[0], STDIN_FILENO);
-		dup2(stdoutpipe[1], STDOUT_FILENO);
-		close(stdinpipe[1]);
-		close(stdoutpipe[0]);
-		execve(interpreter.c_str(), argv, envp.data());
-		exit(1);
-	}
+		setupChild(stdinpipe, stdoutpipe, argv, envp.data());
 	else
 	{
 		close(stdinpipe[0]);
@@ -114,28 +149,7 @@ std::string	CgiHandler::execute()
 		close(stdinpipe[1]);
 		waitpid(pid, NULL, 0);
 		std::string output;
-		char buf[BUF_SIZE];
-		int bytes;
-		while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
-			output += std::string(buf, bytes);
-		close(stdoutpipe[0]);
-		size_t sepPos = output.find("\r\n\r\n");
-                std::string cgiHeaders;
-                std::string cgiBody;
-                if (sepPos != std::string::npos)
-                {
-                   cgiHeaders = output.substr(0, sepPos);
-                   cgiBody = output.substr(sepPos + 4);
-                }
-                else
-                   cgiBody = output;
-                std::ostringstream response;
-                response << "HTTP/1.1 200 OK\r\n";
-                response << cgiHeaders << "\r\n";
-                if (cgiHeaders.find("Content-Length") == std::string::npos)
-                    response << "Content-Length: " << cgiBody.size() << "\r\n";
-		response<<"\r\n";
-                response << cgiBody;
-                return response.str();
-	 }// al final de execute(), antes del return
+                return buildResponse(output, stdoutpipe);
+	 }
+	return "";
 }

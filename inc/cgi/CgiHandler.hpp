@@ -3,16 +3,23 @@
 #include "../inc/request/HttpRequest.hpp"
 #include <string>
 #include <iostream>
+
 class	CgiHandler
 {
 	private:
 		HttpRequest &request;
 		const LocationConfig &location;
 		std::string scriptPath;
-		char	**buildEnv();
-		char	**builkdArgv();
-		void	setupChildProcess(int pipefd[2]);
-		std::string	getInterpreter(const std::string &ext);
+		std::string interpreter;
+		std::string query;
+
+		std::string getInterpreter(const std::string &ext);
+		std::string extractScriptPath();
+		std::string extractExtension();
+		std::string extractQuery();
+		std::vector<std::string> buildEnv();
+		std::string buildResponse(std::string &output, int stdoutpipe[2]);
+		void	setupChild(int stdinpipe[2],int stdoutpipe[2], char *argv[], char **envp);
 	public:
 		CgiHandler(HttpRequest &request, const LocationConfig &location);
 		~CgiHandler();
