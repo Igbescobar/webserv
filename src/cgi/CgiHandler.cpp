@@ -2,6 +2,7 @@
 #include <sys/wait.h>
 #include "../inc/cgi/CgiHandler.hpp"
 #include "../inc/parser/config/LocationConfig.hpp"
+#include <sstream>
 #define BUF_SIZE 4096
 
 CgiHandler::CgiHandler(HttpRequest &request, const LocationConfig &location): request(request), location(location)
@@ -36,13 +37,15 @@ std::string	CgiHandler::execute()
 	std::string uri = request.getUri();
 	//Getting filename
 	size_t filePosition = uri.find_last_of('/');
-	size_t queryPos = uri.find('?', filePosition);
 	if(filePosition == std::string::npos)
 	{
 		std::cout<<"Does not have a correct file name";
 		return "";
 	}
-	std::string fileName = uri.substr(filePosition, queryPos -filePosition);
+	size_t queryPos = uri.find('?', filePosition);
+	std::string fileName = (queryPos != std::string::npos) 
+	? uri.substr(filePosition + 1, queryPos - filePosition)
+	: uri.substr(filePosition);
 	fileName.erase(0,1); 
 	std::string scriptPath = location.getRoot() + fileName;
 	std::cout<<"Script path: "<<scriptPath<<"\n";
@@ -92,6 +95,8 @@ std::string	CgiHandler::execute()
 	pid_t pid = fork();
 	if (pid == 0)
 	{
+		std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
+	        chdir(scriptDir.c_str());
 		//hijo (CGI)
 		dup2(stdinpipe[0], STDIN_FILENO);
 		dup2(stdoutpipe[1], STDOUT_FILENO);
@@ -114,7 +119,23 @@ std::string	CgiHandler::execute()
 		while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
 			output += std::string(buf, bytes);
 		close(stdoutpipe[0]);
-		return output;
-	}
-	return scriptPath;
+		size_t sepPos = output.find("\r\n\r\n");
+                std::string cgiHeaders;
+                std::string cgiBody;
+                if (sepPos != std::string::npos)
+                {
+                   cgiHeaders = output.substr(0, sepPos);
+                   cgiBody = output.substr(sepPos + 4);
+                }
+                else
+                   cgiBody = output;
+                std::ostringstream response;
+                response << "HTTP/1.1 200 OK\r\n";
+                response << cgiHeaders << "\r\n";
+                if (cgiHeaders.find("Content-Length") == std::string::npos)
+                    response << "Content-Length: " << cgiBody.size() << "\r\n";
+		response<<"\r\n";
+                response << cgiBody;
+                return response.str();
+	 }// al final de execute(), antes del return
 }
