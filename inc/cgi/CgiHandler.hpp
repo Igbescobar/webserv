@@ -18,7 +18,8 @@ class	CgiHandler
 		std::string extractExtension();
 		std::string extractQuery();
 		std::vector<std::string> buildEnv();
-		std::string buildResponse(std::string &output, int stdoutpipe[2]);
+		std::string readPipe(int stdoutPipe[2]);
+		std::string buildResponse(std::string &output);
 		void	setupChild(int stdinpipe[2],int stdoutpipe[2], char *argv[], char **envp);
 	public:
 		CgiHandler(HttpRequest &request, const LocationConfig &location);

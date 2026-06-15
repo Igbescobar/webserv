@@ -47,7 +47,9 @@ std::string	CgiHandler::extractExtension()
 		return "";
 	}
 	size_t questionpos = request.getUri().find('?', dotPos);
-	std::string extensionPath = request.getUri().substr(dotPos, questionpos - dotPos);
+	std::string extensionPath = (questionpos != std::string::npos) 
+		? request.getUri().substr(dotPos, questionpos - dotPos)
+		: request.getUri().substr(dotPos);
 	std::cout<<"Extesion path:"<<extensionPath<<"\n";
 	return extensionPath;
 }
@@ -80,13 +82,19 @@ void	CgiHandler::setupChild(int stdinpipe[2],int stdoutpipe[2], char *argv[], ch
 	exit(1);
 }
 
-std::string	CgiHandler::buildResponse(std::string &output, int stdoutpipe[2])
+std::string	CgiHandler::readPipe(int stdoutpipe[2])
 {
+	std::string output;
 	char buf[BUF_SIZE];
 	int bytes;
 	while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
 		output += std::string(buf, bytes);
 	close(stdoutpipe[0]);
+	return output;
+}
+
+std::string	CgiHandler::buildResponse(std::string &output)
+{
 	size_t sepPos = output.find("\r\n\r\n");
 	std::string cgiHeaders;
 	std::string cgiBody;
@@ -132,8 +140,9 @@ std::string	CgiHandler::execute()
 	//Execute
 	int	stdinpipe[2];
 	int	stdoutpipe[2];
-	pipe(stdinpipe);
-	pipe(stdoutpipe);
+	
+	if(pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
+		return "";
 
 	pid_t pid = fork();
 	if(pid < 0)
@@ -148,8 +157,8 @@ std::string	CgiHandler::execute()
 		write(stdinpipe[1], body.c_str(), body.size());
 		close(stdinpipe[1]);
 		waitpid(pid, NULL, 0);
-		std::string output;
-                return buildResponse(output, stdoutpipe);
+		std::string output = readPipe(stdoutpipe);
+                return buildResponse(output);
 	 }
 	return "";
 }
