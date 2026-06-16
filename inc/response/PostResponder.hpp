@@ -23,4 +23,10 @@ private:
   static bool ensureDirExists(const std::string &dirPath);
   static std::string baseNameFromUri(const std::string &uri);
   static bool writeBodyToFile(const std::string &path, const std::string &body);
+  static bool isMultipart(const HttpRequest &req);
+  static bool parseMultipartFile(const HttpRequest &req,
+                                 std::string &outFileName,
+                                 std::string &outFileData);
+  static std::string sanitizeFileName(const std::string &name);
+  static std::string toLower(const std::string &s);
 };

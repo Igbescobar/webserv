@@ -40,7 +40,7 @@ bool Client::read(int clientFd) {
   }
 
   buffer[bytesRead] = '\0';
-  request.append(buffer);
+  request.append(std::string(buffer, bytesRead));
 
   switch (request.getState()) {
   case INCOMPLETE:

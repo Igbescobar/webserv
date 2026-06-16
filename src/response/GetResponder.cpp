@@ -15,15 +15,8 @@ HttpResponse GetResponder::handle(const ServerConfig &config,
   if (!FileResponder::isSafeUri(uri))
     return ErrorResponseBuilder::build(config, req, 400);
 
-  std::string filePath;
-  if (location != NULL && uri.find(location->getPattern()) == 0) {
-    std::string relativeUri = uri.substr(location->getPattern().length());
-    filePath = ResponseIO::joinPath(
-        FileResponder::getDocumentRoot(config, location), relativeUri);
-  } else {
-    filePath = ResponseIO::joinPath(
-        FileResponder::getDocumentRoot(config, location), uri);
-  }
+  std::string filePath = ResponseIO::joinPath(
+      FileResponder::getDocumentRoot(config, location), uri);
 
   if (FileResponder::isDirectory(filePath))
     return handleDirectory(config, location, req, uri, filePath);
@@ -85,11 +78,6 @@ std::string GetResponder::getIndexPath(const ServerConfig &config,
     if (FileResponder::isRegularFile(candidate))
       return candidate;
   }
-
-  const std::string fallback = path + "index.html";
-  if (FileResponder::isRegularFile(fallback))
-    return fallback;
-
   return "";
 }
 
