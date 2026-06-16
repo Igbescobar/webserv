@@ -25,5 +25,4 @@ public:
   ~Socket();
 
   int getFd();
-  static void setNonBlocking(int fd);
 };

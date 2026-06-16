@@ -11,6 +11,8 @@
   "\n"                                                                         \
   "Hello world!\n"
 
+#define STATUS_LINE "HTTP/1.1 200 OK\n"
+
 class HttpResponse {
 private:
   ServerConfig serverConfig;
@@ -22,6 +24,7 @@ public:
   HttpResponse();
   HttpResponse(ServerConfig serverConfig, HttpRequest request);
   HttpResponse(ServerConfig serverConfig, int errorCode);
+  HttpResponse(ServerConfig serverConfig, std::string cgiOutput);
   ~HttpResponse();
   HttpResponse(const HttpResponse &other);
   HttpResponse &operator=(const HttpResponse &other);
@@ -30,4 +33,6 @@ public:
   int getErrorCode();
   void erase(int bytes);
   bool empty();
+  bool isCgi();
+  std::string getCgiPath();
 };

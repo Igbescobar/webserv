@@ -1,4 +1,5 @@
 #include "server/Epoll.hpp"
+#include "utils.hpp"
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -10,6 +11,7 @@ Epoll::Epoll() {
   epollFd = epoll_create(1);
   if (epollFd < 0)
     throw std::runtime_error("epoll_create: " + std::string(strerror(errno)));
+  setCloseOnExec(epollFd);
 }
 
 Epoll::~Epoll() { close(epollFd); }

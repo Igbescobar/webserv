@@ -16,6 +16,11 @@ HttpResponse::HttpResponse(ServerConfig serverConfig, int errorCode)
   response = RESPONSE;
 }
 
+HttpResponse::HttpResponse(ServerConfig serverConfig, std::string cgiOutput)
+    : serverConfig(serverConfig) {
+  response = STATUS_LINE + cgiOutput;
+}
+
 HttpResponse::HttpResponse(const HttpResponse &other) {
   serverConfig = other.serverConfig;
   request = other.request;
@@ -35,3 +40,7 @@ int HttpResponse::getErrorCode() { return errorCode; }
 void HttpResponse::erase(int bytes) { response.erase(0, bytes); }
 
 bool HttpResponse::empty() { return response.empty(); }
+
+bool HttpResponse::isCgi() { return true; }
+
+std::string HttpResponse::getCgiPath() { return ""; }

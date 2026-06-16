@@ -1,19 +1,24 @@
 #include "server/Client.hpp"
+#include "cgi/Cgi.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
 #include "cgi/CgiHandler.hpp"
 #include "server/Socket.hpp"
+#include "utils.hpp"
 #include <ctime>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
 
-Client::Client(int clientSocket, Epoll &epoll, const ServerConfig &serverConfig)
-    : clientFd(clientSocket), epoll(epoll), serverConfig(serverConfig) {
+Client::Client(int clientSocket, Server &server,
+               const ServerConfig &serverConfig)
+    : clientFd(clientSocket), serverConfig(serverConfig), server(server),
+      cgi(NULL) {
   request = HttpRequest(serverConfig);
-  Socket::setNonBlocking(clientSocket);
-  epoll.addRead(clientSocket);
+  setNonBlocking(clientSocket);
+  setCloseOnExec(clientSocket);
+  server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;
 }
@@ -76,58 +81,52 @@ bool Client::read(int clientFd) {
 
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
   requestSize += bytesRead;
-  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT) {
+  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT)
     return false;
-  }
 
   buffer[bytesRead] = '\0';
   request.append(buffer);
 
-  switch (request.getState()) {
-  case INCOMPLETE:
-    return true;
-  case COMPLETE:
-    if(isCGI())
-    {
-        const LocationConfig *loc = getMatchingLocation(request.getUri());
-        if(loc == NULL)
-        {
-            responseStr = HttpResponse(serverConfig, 404).getResponse();
-            epoll.modWrite(clientFd);
-            return true;
-        }
-        responseStr = CgiHandler(request, *loc).execute();
-    }
+  handleRequestState(request.getState());
+  return true;
+}
+
+void Client::handleRequestState(t_state state) {
+  if (state == COMPLETE) {
+    HttpResponse response(serverConfig, request);
+    if (response.isCgi())
+      cgi = new Cgi(server, response.getCgiPath());
     else
-    {
-        responseStr = HttpResponse(serverConfig, request).getResponse();
-    }
-    epoll.modWrite(clientFd);
-    return true;
-  case ERROR:
+      responseStr = response.getResponse();
+    server.getEpoll().modWrite(clientFd);
+  } else if (state == ERROR) {
     responseStr =
         HttpResponse(serverConfig, request.getErrorCode()).getResponse();
-    epoll.modWrite(clientFd);
-    return true;
-  default:
+    server.getEpoll().modWrite(clientFd);
+  } else
     throw std::runtime_error("unknown request state");
-  }
 }
 
 bool Client::write(int clientFd) {
-  int bytesWritten;
+  if (cgi) {
+    if (cgi->getState() == INCOMPLETE)
+      return true;
+    responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
+    delete cgi;
+    cgi = NULL;
+  }
 
-  bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
+  int bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
   if (bytesWritten <= 0) {
     return false;
   }
 
   responseStr.erase(0, bytesWritten);
 
-  if (responseStr.empty()) {
-    return false;
-  }
-  return true;
+  if (!responseStr.empty())
+    return true;
+
+  return false;
 }
 
 void Client::updateActivity() { lastActivity = std::time(NULL); }
