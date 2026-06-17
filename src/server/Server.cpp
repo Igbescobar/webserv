@@ -77,7 +77,9 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
     // TODO: cgi handle
-    cgiMap[triggeredFd]->handleEvent();
+    if(cgiMap[triggeredFd]->handleEvent()) {
+    
+  }
   } else {
     handleServer(triggeredFd);
   }

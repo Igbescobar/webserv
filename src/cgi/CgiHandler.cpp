@@ -20,6 +20,22 @@ std::string CgiHandler::getInterpreter(const std::string &ext) {
   return "";
 }
 
+bool CgiHandler::handleEvent() {
+ char buf[BUF_SIZE];
+ int bytes = ::read(pipeFd, buf, BUF_SIZE);
+ if (bytes > 0) {
+   output += std::string(buf, bytes);
+   return false;
+ }
+ if (bytes == 0) {
+  waitpid(pid, NULL, WNOHANG);
+  state = COMPLETE;
+  return true;
+ }
+ state = ERROR;
+ return true;
+}
+
 std::string CgiHandler::extractScriptPath() {
   size_t filePosition = request.getUri().find_last_of('/');
   if (filePosition == std::string::npos) {
@@ -106,7 +122,7 @@ std::string CgiHandler::buildResponse(std::string &output) {
   return response.str();
 }
 
-std::string CgiHandler::execute() {
+void CgiHandler::execute() {
   scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
@@ -140,9 +156,9 @@ std::string CgiHandler::execute() {
     std::string body = request.getBody();
     write(stdinpipe[1], body.c_str(), body.size());
     close(stdinpipe[1]);
-    waitpid(pid, NULL, 0);
-    std::string output = readPipe(stdoutpipe);
-    return buildResponse(output);
+    fcntl(stdoutpipe[0], F_SETFL, O_NONBLOCK);
+    server.getCgiMap()[stdoutpipe[0]] = this;
+    server.getEpoll().addRead(stdoutpipe[0]);
   }
   return "";
 }
