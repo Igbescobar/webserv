@@ -1,31 +1,164 @@
-#include "cgi/Cgi.hpp"
-#include "request/HttpRequest.hpp"
-#include "server/Client.hpp"
-#include <cerrno>
-#include <cstring>
-#include <stdexcept>
+#include "../inc/cgi/CgiHandler.hpp"
+#include "../inc/parser/config/LocationConfig.hpp"
+#include <sstream>
+#include <sys/wait.h>
 #include <unistd.h>
+#define BUF_SIZE 4096
 
-Cgi::Cgi(Server &server, std::string path)
-    : server(server), path(path), state(INCOMPLETE) {
-  if (pipe(pipefd) < 0)
-    throw std::runtime_error("pipe: " + std::string(strerror(errno)));
+Cgi::Cgi(HttpRequest &request, const LocationConfig &location)
+    : request(request), location(location) {}
 
-  write(pipefd[1], CGI_SAMPLE_OUTPUT, sizeof(CGI_SAMPLE_OUTPUT));
+Cgi::~Cgi() {}
 
-  server.getCgiMap()[pipefd[0]] = this;
-  server.getEpoll().addRead(pipefd[0]);
+std::string Cgi::getInterpreter(const std::string &ext) {
+  if (ext == ".py")
+    return "/usr/bin/python3";
+  if (ext == ".php")
+    return "/usr/bin/php-cgi";
+  if (ext == ".sh")
+    return "/bin/bash";
+  return "";
 }
 
-void Cgi::handleEvent() {
-  char buf[BUF_SIZE + 1];
-
-  int bytesRead = read(pipefd[0], buf, BUF_SIZE);
-  buf[bytesRead] = '\0';
-  output += buf;
+bool Cgi::handleEvent() {
+ char buf[BUF_SIZE];
+ int bytes = ::read(pipeFd, buf, BUF_SIZE);
+ if (bytes > 0) {
+   output += std::string(buf, bytes);
+   return false;
+ }
+ if (bytes == 0) {
+  waitpid(pid, NULL, WNOHANG);
   state = COMPLETE;
+  return true;
+ }
+ state = ERROR;
+ return true;
 }
 
-std::string Cgi::getOutput() { return output; }
+std::string Cgi::extractScriptPath() {
+  size_t filePosition = request.getUri().find_last_of('/');
+  if (filePosition == std::string::npos) {
+    std::cout << "Does not have a correct file name";
+    return "";
+  }
+  size_t queryPos = request.getUri().find('?', filePosition);
+  std::string fileName =
+      (queryPos != std::string::npos)
+          ? request.getUri().substr(filePosition, queryPos - filePosition)
+          : request.getUri().substr(filePosition);
+  fileName.erase(0, 1);
+  return location.getRoot() + fileName;
+}
 
-t_state Cgi::getState() { return state; }
+std::string Cgi::extractExtension() {
+  size_t dotPos = request.getUri().find_last_of('.');
+  if (dotPos == std::string::npos) {
+    std::cout << "Does not have a correct file extension";
+    return "";
+  }
+  size_t questionpos = request.getUri().find('?', dotPos);
+  std::string extensionPath =
+      (questionpos != std::string::npos)
+          ? request.getUri().substr(dotPos, questionpos - dotPos)
+          : request.getUri().substr(dotPos);
+  std::cout << "Extesion path:" << extensionPath << "\n";
+  return extensionPath;
+}
+
+std::string Cgi::extractQuery() {
+  size_t queryPos = request.getUri().find('?');
+  return (queryPos != std::string::npos) ? request.getUri().substr(queryPos + 1)
+                                         : "";
+}
+
+std::vector<std::string> Cgi::buildEnv() {
+  std::vector<std::string> env;
+  env.push_back("REQUEST_METHOD=" + request.getMethod());
+  env.push_back("CONTENT_LENGTH=" + request.getHeader("content-length"));
+  env.push_back("CONTENT_TYPE=" + request.getHeader("content-type"));
+  env.push_back("QUERY_STRING=" + query);
+  return env;
+}
+
+void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
+                            char **envp) {
+  std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
+  chdir(scriptDir.c_str());
+  dup2(stdinpipe[0], STDIN_FILENO);
+  dup2(stdoutpipe[1], STDOUT_FILENO);
+  close(stdinpipe[1]);
+  close(stdoutpipe[0]);
+  execve(interpreter.c_str(), argv, envp);
+  exit(1);
+}
+
+std::string Cgi::readPipe(int stdoutpipe[2]) {
+  std::string output;
+  char buf[BUF_SIZE];
+  int bytes;
+  while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
+    output += std::string(buf, bytes);
+  close(stdoutpipe[0]);
+  return output;
+}
+
+std::string Cgi::buildResponse(std::string &output) {
+  size_t sepPos = output.find("\r\n\r\n");
+  std::string cgiHeaders;
+  std::string cgiBody;
+  if (sepPos != std::string::npos) {
+    cgiHeaders = output.substr(0, sepPos);
+    cgiBody = output.substr(sepPos + 4);
+  } else
+    cgiBody = output;
+  std::ostringstream response;
+  response << "HTTP/1.1 200 OK\r\n";
+  response << cgiHeaders << "\r\n";
+  if (cgiHeaders.find("Content-Length") == std::string::npos)
+    response << "Content-Length: " << cgiBody.size() << "\r\n";
+  response << "\r\n";
+  response << cgiBody;
+  return response.str();
+}
+
+void Cgi::execute() {
+  scriptPath = extractScriptPath();
+  interpreter = getInterpreter(extractExtension());
+  query = extractQuery();
+  char *argv[] = {const_cast<char *>(interpreter.c_str()),
+                  const_cast<char *>(scriptPath.c_str()), NULL};
+
+  std::vector<std::string> env = buildEnv();
+
+  std::vector<char *> envp;
+  std::cout << "ENV: " << "\n";
+  for (size_t i = 0; i < env.size(); i++) {
+    std::cout << env[i] << "\n";
+    envp.push_back(const_cast<char *>(env[i].c_str()));
+  }
+  envp.push_back(NULL);
+
+  int stdinpipe[2];
+  int stdoutpipe[2];
+
+  if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
+    return "";
+
+  pid_t pid = fork();
+  if (pid < 0)
+    return "";
+  if (pid == 0)
+    setupChild(stdinpipe, stdoutpipe, argv, envp.data());
+  else {
+    close(stdinpipe[0]);
+    close(stdoutpipe[1]);
+    std::string body = request.getBody();
+    write(stdinpipe[1], body.c_str(), body.size());
+    close(stdinpipe[1]);
+    fcntl(stdoutpipe[0], F_SETFL, O_NONBLOCK);
+    server.getCgiMap()[stdoutpipe[0]] = this;
+    server.getEpoll().addRead(stdoutpipe[0]);
+  }
+  return "";
+}

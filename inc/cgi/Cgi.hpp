@@ -1,34 +1,31 @@
-#pragma once
-
-#include "request/HttpRequest.hpp"
-#include "server/Server.hpp"
+#ifndef CGIHANDLER_HPP
+#define CGIHANDLER_HPP
+#include "../inc/request/HttpRequest.hpp"
+#include <iostream>
 #include <string>
-
-#define CGI_SAMPLE_OUTPUT                                                      \
-  "Content-Type: text/plain\n"                                                 \
-  "Content-Length: 13\n"                                                       \
-  "\n"                                                                         \
-  "Hello world!\n"
-
-class Server;
-class Client;
-class Cgi;
-
-// TODO: fds non-blocking! cloexec?
 
 class Cgi {
 private:
-  Server &server;
-  std::string path;
-  std::string output;
-  int pipefd[2];
-  t_state state;
+  HttpRequest &request;
+  const LocationConfig &location;
+  std::string scriptPath;
+  std::string interpreter;
+  std::string query;
+
+  std::string getInterpreter(const std::string &ext);
+  std::string extractScriptPath();
+  std::string extractExtension();
+  std::string extractQuery();
+  std::vector<std::string> buildEnv();
+  std::string readPipe(int stdoutPipe[2]);
+  std::string buildResponse(std::string &output);
+  void setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
+                  char **envp);
 
 public:
-  Cgi(Server &server, std::string path);
-
-  void handleEvent();
-
-  std::string getOutput();
-  t_state getState();
+  Cgi(HttpRequest &request, const LocationConfig &location);
+  ~Cgi();
+  std::string execute();
+  bool handleEvent();
 };
+#endif

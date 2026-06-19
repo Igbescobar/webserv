@@ -3,7 +3,7 @@
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
-#include "cgi/CgiHandler.hpp"
+#include "cgi/CgiConstructor.hpp"
 #include "server/Socket.hpp"
 #include "utils.hpp"
 #include <ctime>
@@ -94,8 +94,11 @@ bool Client::read(int clientFd) {
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     HttpResponse response(serverConfig, request);
-    if (response.isCgi())
+    if (IsCGI())
+    {
       cgi = new Cgi(server, response.getCgiPath());
+      cgi->execute(server);
+    }
     else
       responseStr = response.getResponse();
     server.getEpoll().modWrite(clientFd);
