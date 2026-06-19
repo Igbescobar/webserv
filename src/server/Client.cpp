@@ -94,10 +94,10 @@ bool Client::read(int clientFd) {
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     HttpResponse response(serverConfig, request);
-    if (IsCGI())
+    if (isCGI())
     {
-      cgi = new Cgi(server, response.getCgiPath());
-      cgi->execute(server);
+      cgi = new Cgi(request, *getMatchingLocation(request.getUri()));
+      cgi->execute();
     }
     else
       responseStr = response.getResponse();

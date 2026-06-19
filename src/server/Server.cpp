@@ -77,9 +77,17 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
     // TODO: cgi handle
-    if(cgiMap[triggeredFd]->handleEvent()) {
-      cgiMap[triggeredFd]->handleevent();
-  }
+    Cgi *cgi = cgiMap[triggeredFd];
+    if(cgi->handleEvent())
+    {
+      std::string response;
+      if(cgi->getState() == COMPLETE){
+         std::string output = cgi->getOutput();
+         response = cgi->buildResponse(output);
+      }
+      else
+         response = HttpResponse(serverConfig, 500).getResponse();
+    }
   } else {
     handleServer(triggeredFd);
   }

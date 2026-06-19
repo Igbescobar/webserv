@@ -11,6 +11,8 @@ private:
   std::string scriptPath;
   std::string interpreter;
   std::string query;
+  std::string output;
+  t_state state;
 
   std::string getInterpreter(const std::string &ext);
   std::string extractScriptPath();
@@ -18,14 +20,15 @@ private:
   std::string extractQuery();
   std::vector<std::string> buildEnv();
   std::string readPipe(int stdoutPipe[2]);
-  std::string buildResponse(std::string &output);
   void setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
                   char **envp);
-
 public:
   Cgi(HttpRequest &request, const LocationConfig &location);
   ~Cgi();
   std::string execute();
+  std::string getOutput();
   bool handleEvent();
+  t_state getState();
+  std::string buildResponse(std::string &output);
 };
 #endif

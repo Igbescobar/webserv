@@ -162,3 +162,13 @@ void Cgi::execute() {
   }
   return "";
 }
+
+t_state Cgi::getState()
+{
+  return state;
+}
+
+std::string Client::getOutput()
+{
+  return output;
+}
