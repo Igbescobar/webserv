@@ -143,7 +143,7 @@ void Cgi::execute(Server &server) {
   int stdinpipe[2];
   int stdoutpipe[2];
 
-  if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
+  if (pipe(stdinpipe, O_CLOEXEC) < 0 || pipe(stdoutpipe, CLOEXEC) < 0)
     return ;
 
   pid = fork();

@@ -1,4 +1,4 @@
-#include "cgi/CgiConstructor.hpp"
+/*#include "cgi/CgiConstructor.hpp"
 #include "request/HttpRequest.hpp"
 #include "server/Client.hpp"
 #include <cerrno>
@@ -28,4 +28,4 @@ void CgiConstructor::handleEvent() {
 
 std::string CgiConstructor::getOutput() { return output; }
 
-t_state CgiConstructor::getState() { return state; }
+t_state CgiConstructor::getState() { return state; }*/

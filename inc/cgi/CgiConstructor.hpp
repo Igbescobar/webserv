@@ -10,7 +10,7 @@
   "\n"                                                                         \
   "Hello world!\n"
 
-class Server;
+/*class Server;
 class Client;
 class Cgi;
 
@@ -18,17 +18,17 @@ class Cgi;
 
 class CgiConstructor {
 private:
-  Server &server;
+ // Server &server;
   std::string path;
   std::string output;
   int pipefd[2];
   t_state state;
 
 public:
-  CgiConstructor(Server &server, std::string path);
+  CgiConstructor(std::string path);
 
   void handleEvent();
 
   std::string getOutput();
   t_state getState();
-};
+};*/
