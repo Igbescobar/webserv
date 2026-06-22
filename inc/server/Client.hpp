@@ -42,4 +42,5 @@ public:
 
   bool handleEvent(uint32_t eventsMask);
   bool isTimedOut();
+  void setResponse(const std::string &response);
 };

@@ -1,9 +1,11 @@
 #ifndef CGIHANDLER_HPP
 #define CGIHANDLER_HPP
-#include "../inc/request/HttpRequest.hpp"
+#include "request/HttpRequest.hpp"
+#include "server/Server.hpp"
 #include <iostream>
 #include <string>
 
+class Server;
 class Cgi {
 private:
   HttpRequest &request;
@@ -13,6 +15,9 @@ private:
   std::string query;
   std::string output;
   t_state state;
+  int clientFd;
+  int pipeFd;
+  pid_t pid;
 
   std::string getInterpreter(const std::string &ext);
   std::string extractScriptPath();
@@ -23,12 +28,13 @@ private:
   void setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
                   char **envp);
 public:
-  Cgi(HttpRequest &request, const LocationConfig &location);
+  Cgi(HttpRequest &request, const LocationConfig &location, int clientFd);
   ~Cgi();
-  std::string execute();
+  void execute(Server &server);
   std::string getOutput();
   bool handleEvent();
   t_state getState();
   std::string buildResponse(std::string &output);
+  int getClientFd();
 };
 #endif

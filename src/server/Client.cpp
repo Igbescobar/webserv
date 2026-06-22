@@ -96,12 +96,20 @@ void Client::handleRequestState(t_state state) {
     HttpResponse response(serverConfig, request);
     if (isCGI())
     {
-      cgi = new Cgi(request, *getMatchingLocation(request.getUri()));
-      cgi->execute();
+      std::cout<<"Entrada aqui\n";
+      const LocationConfig *loc = getMatchingLocation(request.getUri());
+      if (loc == NULL) {
+	      responseStr = response.getResponse();
+	      server.getEpoll().modWrite(clientFd);
+	      return;
+      }
+      cgi = new Cgi(request, *loc, clientFd);
+      cgi->execute(server);
     }
-    else
+    else{
       responseStr = response.getResponse();
     server.getEpoll().modWrite(clientFd);
+    }
   } else if (state == ERROR) {
     responseStr =
         HttpResponse(serverConfig, request.getErrorCode()).getResponse();
@@ -111,14 +119,6 @@ void Client::handleRequestState(t_state state) {
 }
 
 bool Client::write(int clientFd) {
-  if (cgi) {
-    if (cgi->getState() == INCOMPLETE)
-      return true;
-    responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
-    delete cgi;
-    cgi = NULL;
-  }
-
   int bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
   if (bytesWritten <= 0) {
     return false;
@@ -141,4 +141,9 @@ bool Client::isTimedOut() {
   if ((currentTime - connectionStart) > ABSOLUTE_LIMIT)
     return true;
   return false;
+}
+
+void Client::setResponse(const std::string &response)
+{
+	responseStr = response;
 }

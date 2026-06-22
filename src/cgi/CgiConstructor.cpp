@@ -13,7 +13,7 @@ CgiConstructor::CgiConstructor(Server &server, std::string path)
 
   write(pipefd[1], CGI_SAMPLE_OUTPUT, sizeof(CGI_SAMPLE_OUTPUT));
 
-  server.getCgiMap()[pipefd[0]] = this;
+  //server.getCgiMap()[pipefd[0]] = this;
   server.getEpoll().addRead(pipefd[0]);
 }
 

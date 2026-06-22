@@ -80,13 +80,15 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
     Cgi *cgi = cgiMap[triggeredFd];
     if(cgi->handleEvent())
     {
-      std::string response;
-      if(cgi->getState() == COMPLETE){
-         std::string output = cgi->getOutput();
-         response = cgi->buildResponse(output);
+      int targetFd = cgi->getClientFd();
+      if(clientMap.count(targetFd)) {
+         clientMap[targetFd]->setResponse(cgi->getOutput());
+         epoll.modWrite(targetFd);
       }
-      else
-         response = HttpResponse(serverConfig, 500).getResponse();
+      epoll.remove(triggeredFd);
+      close(triggeredFd);
+      cgiMap.erase(triggeredFd);
+      delete cgi;
     }
   } else {
     handleServer(triggeredFd);

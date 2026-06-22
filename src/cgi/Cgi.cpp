@@ -1,12 +1,13 @@
-#include "../inc/cgi/CgiHandler.hpp"
 #include "../inc/parser/config/LocationConfig.hpp"
+#include "cgi/Cgi.hpp"
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 #define BUF_SIZE 4096
 
-Cgi::Cgi(HttpRequest &request, const LocationConfig &location)
-    : request(request), location(location) {}
+Cgi::Cgi(HttpRequest &request, const LocationConfig &location, int clientFd)
+    : request(request), location(location), clientFd(clientFd) {}
 
 Cgi::~Cgi() {}
 
@@ -93,7 +94,7 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
   exit(1);
 }
 
-std::string Cgi::readPipe(int stdoutpipe[2]) {
+/*std::string Cgi::readPipe(int stdoutpipe[2]) {
   std::string output;
   char buf[BUF_SIZE];
   int bytes;
@@ -101,9 +102,9 @@ std::string Cgi::readPipe(int stdoutpipe[2]) {
     output += std::string(buf, bytes);
   close(stdoutpipe[0]);
   return output;
-}
+}*/
 
-std::string Cgi::buildResponse(std::string &output) {
+/*std::string Cgi::buildResponse(std::string &output) {
   size_t sepPos = output.find("\r\n\r\n");
   std::string cgiHeaders;
   std::string cgiBody;
@@ -120,9 +121,9 @@ std::string Cgi::buildResponse(std::string &output) {
   response << "\r\n";
   response << cgiBody;
   return response.str();
-}
+}*/
 
-void Cgi::execute() {
+void Cgi::execute(Server &server) {
   scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
@@ -143,11 +144,11 @@ void Cgi::execute() {
   int stdoutpipe[2];
 
   if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
-    return "";
+    return ;
 
-  pid_t pid = fork();
+  pid = fork();
   if (pid < 0)
-    return "";
+    return ;
   if (pid == 0)
     setupChild(stdinpipe, stdoutpipe, argv, envp.data());
   else {
@@ -156,11 +157,12 @@ void Cgi::execute() {
     std::string body = request.getBody();
     write(stdinpipe[1], body.c_str(), body.size());
     close(stdinpipe[1]);
+    this->pipeFd = stdoutpipe[0];
     fcntl(stdoutpipe[0], F_SETFL, O_NONBLOCK);
     server.getCgiMap()[stdoutpipe[0]] = this;
     server.getEpoll().addRead(stdoutpipe[0]);
   }
-  return "";
+  return ;
 }
 
 t_state Cgi::getState()
@@ -168,7 +170,12 @@ t_state Cgi::getState()
   return state;
 }
 
-std::string Client::getOutput()
+std::string Cgi::getOutput()
 {
-  return output;
+  return this->output;
+}
+
+int Cgi::getClientFd()
+{
+	return clientFd;
 }
