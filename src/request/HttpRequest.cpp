@@ -276,17 +276,19 @@ void HttpRequest::append(const std::string &chunk) {
 }
 
 void HttpRequest::print() const {
-  std::cout << "=== HttpRequest ===\n";
-  std::cout << "State:      " << (state == INCOMPLETE ? "INCOMPLETE" : state == COMPLETE ? "COMPLETE" : "ERROR") << "\n";
-  std::cout << "ErrorCode:  " << errorCode << "\n";
-  std::cout << "Method:     " << method << "\n";
-  std::cout << "URI:        " << uri << "\n";
-  std::cout << "Version:    " << version << "\n";
-  std::cout << "Headers:\n";
+  //std::cout << "=== HttpRequest ===\n";
+  //std::cout << "State:      " << (state == INCOMPLETE ? "INCOMPLETE" : state == COMPLETE ? "COMPLETE" : "ERROR") << "\n";
+  //std::cout << "ErrorCode:  " << errorCode << "\n";
+  //std::cout << "Method:     " << method << "\n";
+  //std::cout << "URI:        " << uri << "\n";
+  //std::cout << "Version:    " << version << "\n";
+  //std::cout << "Headers:\n";
   for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
-    std::cout << "  " << it->first << ": " << it->second << "\n";
-  std::cout << "Body:       " << body << "\n";
-  std::cout << "Buf size:   " << buf.size() << "\n";
+  {
+	//std::cout << "  " << it->first << ": " << it->second << "\n";
+  }
+  //std::cout << "Body:       " << body << "\n";
+  //std::cout << "Buf size:   " << buf.size() << "\n";
 }
 
 const std::string &HttpRequest::getMethod() const { return this->method; }

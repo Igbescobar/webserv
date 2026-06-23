@@ -13,20 +13,20 @@ int main(int argc, char **argv) {
   }
 
   std::string configPath = (argc == 2) ? argv[1] : "config/default.conf";
-  std::cout << "--- Using configuration file: " << configPath << " ---\n";
+  //std::cout << "--- Using configuration file: " << configPath << " ---\n";
 
   try {
     ConfigParser parser;
     parser.parse(configPath);
     parser.validateServerConfigs();
 
-    const std::vector<ServerConfig> &servers = parser.getServerConfigs();
-    std::cout << "--- Found " << servers.size()
-              << " server configurations ---\n";
+    //const std::vector<ServerConfig> &servers = parser.getServerConfigs();
+    //std::cout << "--- Found " << servers.size()
+    //          << " server configurations ---\n";
 
-    for (size_t i = 0; i < servers.size(); ++i) {
-      logServerConfig(servers[i], i);
-    }
+    //for (size_t i = 0; i < servers.size(); ++i) {
+    //  logServerConfig(servers[i], i);
+    //}
 
     Server s(parser);
     s.run();
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
 void logServerConfig(const ServerConfig &config, int serverIndex) {
   std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
-
+  (void)serverIndex;
   const std::vector<std::string> &ips = config.getIPs();
   const std::vector<int> &ports = config.getPorts();
   for (size_t j = 0; j < ips.size(); ++j) {

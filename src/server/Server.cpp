@@ -66,21 +66,29 @@ void Server::run() {
 }
 
 void Server::handleEvents(int n) {
+  if (n > 0)
+	std::cout << "\n\n N OF REQUESTS: [" << n << "]\n";
   for (int i = 0; i < n; i++)
     handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
-void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
+void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
+{
+	std::cout << "-----------------\nTRIGGERED_FD: [" << triggeredFd << "]\n-----------------\n";
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
+	std::cout << "Found in CLIENT MAP\n-----------------\n";
+    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
+	{
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
+	std::cout << "Found in CGI MAP\n-----------------\n";
     // TODO: cgi handle
     Cgi *cgi = cgiMap[triggeredFd];
     if(cgi->handleEvent())
     {
       int targetFd = cgi->getClientFd();
+	  std::cout << "\nFound " << clientMap.count(targetFd) << " elements.\n";
       if(clientMap.count(targetFd)) {
          clientMap[targetFd]->setResponse(cgi->getOutput());
          epoll.modWrite(targetFd);
@@ -91,6 +99,7 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
       delete cgi;
     }
   } else {
+	std::cout << "!!ENTERED ELSE!!\n-----------------\n";
     handleServer(triggeredFd);
   }
 }
@@ -99,20 +108,19 @@ void Server::handleServer(int serverFd) {
   int clientFd;
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
-
+  std::cout << "ACCEPT REQUEST FROM SERVER [" << serverFd << "]\n";
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
   if (clientFd < 0) {
     switch (errno) {
     case EMFILE:
     case ENFILE:
-      std::cout << "fd limit reached" << std::endl;
+      //std::cout << "fd limit reached" << std::endl;
     case EAGAIN:
       return;
     default:
-      throw std::runtime_error("accept: " + std::string(strerror(errno)));
+      throw std::runtime_error("accept 103: " + std::string(strerror(errno)));
     }
   }
-
   try {
     clientMap[clientFd] =
         new Client(clientFd, *this, getServerConfig(serverFd));

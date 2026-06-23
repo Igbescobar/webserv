@@ -88,40 +88,12 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
   chdir(scriptDir.c_str());
   dup2(stdinpipe[0], STDIN_FILENO);
   dup2(stdoutpipe[1], STDOUT_FILENO);
+  std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2: "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";
   close(stdinpipe[1]);
   close(stdoutpipe[0]);
   execve(interpreter.c_str(), argv, envp);
   exit(1);
 }
-
-/*std::string Cgi::readPipe(int stdoutpipe[2]) {
-  std::string output;
-  char buf[BUF_SIZE];
-  int bytes;
-  while ((bytes = ::read(stdoutpipe[0], buf, BUF_SIZE)) > 0)
-    output += std::string(buf, bytes);
-  close(stdoutpipe[0]);
-  return output;
-}*/
-
-/*std::string Cgi::buildResponse(std::string &output) {
-  size_t sepPos = output.find("\r\n\r\n");
-  std::string cgiHeaders;
-  std::string cgiBody;
-  if (sepPos != std::string::npos) {
-    cgiHeaders = output.substr(0, sepPos);
-    cgiBody = output.substr(sepPos + 4);
-  } else
-    cgiBody = output;
-  std::ostringstream response;
-  response << "HTTP/1.1 200 OK\r\n";
-  response << cgiHeaders << "\r\n";
-  if (cgiHeaders.find("Content-Length") == std::string::npos)
-    response << "Content-Length: " << cgiBody.size() << "\r\n";
-  response << "\r\n";
-  response << cgiBody;
-  return response.str();
-}*/
 
 void Cgi::execute(Server &server) {
   scriptPath = extractScriptPath();
@@ -143,9 +115,10 @@ void Cgi::execute(Server &server) {
   int stdinpipe[2];
   int stdoutpipe[2];
 
-  if (pipe(stdinpipe, O_CLOEXEC) < 0 || pipe(stdoutpipe, CLOEXEC) < 0)
+  if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
     return ;
-
+  std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," << stdinpipe[1] 
+              << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] << "]\n";
   pid = fork();
   if (pid < 0)
     return ;
