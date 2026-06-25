@@ -17,11 +17,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define RESET   "\033[0m"
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define BLUE "\033[34m"
+#define RESET "\033[0m"
 
 volatile sig_atomic_t Server::isRunning = 1;
 
@@ -73,26 +73,23 @@ void Server::run() {
 
 void Server::handleEvents(int n) {
   if (n > 0)
-  for (int i = 0; i < n; i++)
-    handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
+    for (int i = 0; i < n; i++)
+      handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
-void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
-{
+void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
-    {
+    if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
       epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
     Cgi *cgi = cgiMap[triggeredFd];
-    if(cgi->handleEvent())
-    {
+    if (cgi->handleEvent()) {
       int targetFd = cgi->getClientFd();
-      if(clientMap.count(targetFd)) {
-         clientMap[targetFd]->setResponse(cgi->getOutput());
-         epoll.modWrite(targetFd);
+      if (clientMap.count(targetFd)) {
+        clientMap[targetFd]->setResponse(cgi->getOutput());
+        epoll.modWrite(targetFd);
       }
       epoll.remove(triggeredFd);
       close(triggeredFd);
@@ -164,6 +161,7 @@ Epoll &Server::getEpoll() { return epoll; }
 
 std::map<int, Cgi *> &Server::getCgiMap() { return cgiMap; }
 
-  //std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
-  //std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
-  //std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
+// std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
+// std::cout <<GREEN<<"Found in CLIENT MAP
+// :"<<triggeredFd<<"\n-----------------\n"<<RESET; std::cout <<BLUE<<"Found in
+// CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;

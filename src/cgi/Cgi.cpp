@@ -1,10 +1,10 @@
-#include "../inc/parser/config/LocationConfig.hpp"
 #include "cgi/Cgi.hpp"
+#include "../inc/parser/config/LocationConfig.hpp"
 #include "utils.hpp"
+#include <fcntl.h>
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <fcntl.h>
 #define BUF_SIZE 4096
 
 Cgi::Cgi(HttpRequest &request, const LocationConfig &location, int clientFd)
@@ -23,19 +23,19 @@ std::string Cgi::getInterpreter(const std::string &ext) {
 }
 
 bool Cgi::handleEvent() {
- char buf[BUF_SIZE];
- int bytes = ::read(pipeFd, buf, BUF_SIZE);
- if (bytes > 0) {
-   output += std::string(buf, bytes);
-   return false;
- }
- if (bytes == 0) {
-  waitpid(pid, NULL, WNOHANG);
-  state = COMPLETE;
+  char buf[BUF_SIZE];
+  int bytes = ::read(pipeFd, buf, BUF_SIZE);
+  if (bytes > 0) {
+    output += std::string(buf, bytes);
+    return false;
+  }
+  if (bytes == 0) {
+    waitpid(pid, NULL, WNOHANG);
+    state = COMPLETE;
+    return true;
+  }
+  state = ERROR;
   return true;
- }
- state = ERROR;
- return true;
 }
 
 std::string Cgi::extractScriptPath() {
@@ -64,7 +64,7 @@ std::string Cgi::extractExtension() {
       (questionpos != std::string::npos)
           ? request.getUri().substr(dotPos, questionpos - dotPos)
           : request.getUri().substr(dotPos);
-  //std::cout << "Extesion path:" << extensionPath << "\n";
+  // std::cout << "Extesion path:" << extensionPath << "\n";
   return extensionPath;
 }
 
@@ -84,7 +84,7 @@ std::vector<std::string> Cgi::buildEnv() {
 }
 
 void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
-                            char **envp) {
+                     char **envp) {
   std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
   chdir(scriptDir.c_str());
   dup2(stdinpipe[0], STDIN_FILENO);
@@ -105,9 +105,9 @@ void Cgi::execute(Server &server) {
   std::vector<std::string> env = buildEnv();
 
   std::vector<char *> envp;
-  //std::cout << "ENV: " << "\n";
+  // std::cout << "ENV: " << "\n";
   for (size_t i = 0; i < env.size(); i++) {
-    //std::cout << env[i] << "\n";
+    // std::cout << env[i] << "\n";
     envp.push_back(const_cast<char *>(env[i].c_str()));
   }
   envp.push_back(NULL);
@@ -116,14 +116,14 @@ void Cgi::execute(Server &server) {
   int stdoutpipe[2];
 
   if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
-    return ;
+    return;
   setCloseOnExec(stdinpipe[0]);
   setCloseOnExec(stdinpipe[1]);
   setCloseOnExec(stdoutpipe[0]);
   setCloseOnExec(stdoutpipe[1]);
   pid = fork();
   if (pid < 0)
-    return ;
+    return;
   if (pid == 0)
     setupChild(stdinpipe, stdoutpipe, argv, envp.data());
   else {
@@ -137,22 +137,16 @@ void Cgi::execute(Server &server) {
     server.getCgiMap()[stdoutpipe[0]] = this;
     server.getEpoll().addRead(stdoutpipe[0]);
   }
-  return ;
+  return;
 }
 
-t_state Cgi::getState()
-{
-  return state;
-}
+t_state Cgi::getState() { return state; }
 
-std::string Cgi::getOutput()
-{
-  return this->output;
-}
+std::string Cgi::getOutput() { return this->output; }
 
-int Cgi::getClientFd()
-{
-	return clientFd;
-}
-  //std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," << stdinpipe[1] << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] << "]\n";
-  //std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2: "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";
+int Cgi::getClientFd() { return clientFd; }
+
+// std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," <<
+// stdinpipe[1] << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] <<
+// "]\n"; std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2:
+// "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";
