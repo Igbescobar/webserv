@@ -1,5 +1,6 @@
 #include "../inc/parser/config/LocationConfig.hpp"
 #include "cgi/Cgi.hpp"
+#include "utils.hpp"
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -117,6 +118,10 @@ void Cgi::execute(Server &server) {
 
   if (pipe(stdinpipe) < 0 || pipe(stdoutpipe) < 0)
     return ;
+  setCloseOnExec(stdinpipe[0]);
+  setCloseOnExec(stdinpipe[1]);
+  setCloseOnExec(stdoutpipe[0]);
+  setCloseOnExec(stdoutpipe[1]);
   std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," << stdinpipe[1] 
               << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] << "]\n";
   pid = fork();

@@ -17,6 +17,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define RESET   "\033[0m"
+
 volatile sig_atomic_t Server::isRunning = 1;
 
 Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
@@ -67,28 +73,28 @@ void Server::run() {
 
 void Server::handleEvents(int n) {
   if (n > 0)
-	std::cout << "\n\n N OF REQUESTS: [" << n << "]\n";
   for (int i = 0; i < n; i++)
     handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
 {
-	std::cout << "-----------------\nTRIGGERED_FD: [" << triggeredFd << "]\n-----------------\n";
+  epoll.printRegistered();
+	std::cout <<RED<<"-----------------\nTRIGGERED_FD: [" << triggeredFd << "]\n-----------------\n"<<RESET;
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-	std::cout << "Found in CLIENT MAP\n-----------------\n";
+	std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
 	{
+      //epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
-	std::cout << "Found in CGI MAP\n-----------------\n";
+	std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
     // TODO: cgi handle
     Cgi *cgi = cgiMap[triggeredFd];
     if(cgi->handleEvent())
     {
       int targetFd = cgi->getClientFd();
-	  std::cout << "\nFound " << clientMap.count(targetFd) << " elements.\n";
       if(clientMap.count(targetFd)) {
          clientMap[targetFd]->setResponse(cgi->getOutput());
          epoll.modWrite(targetFd);
@@ -98,8 +104,8 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
       cgiMap.erase(triggeredFd);
       delete cgi;
     }
+    //clientMap.erase(triggeredFd);
   } else {
-	std::cout << "!!ENTERED ELSE!!\n-----------------\n";
     handleServer(triggeredFd);
   }
 }
