@@ -79,16 +79,13 @@ void Server::handleEvents(int n) {
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
 {
-  std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-       std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
     {
       epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
-      std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
     Cgi *cgi = cgiMap[triggeredFd];
     if(cgi->handleEvent())
     {
@@ -105,7 +102,6 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
   } else {
     handleServer(triggeredFd);
   }
-  epoll.printRegistered();
 }
 
 void Server::handleServer(int serverFd) {
@@ -167,3 +163,7 @@ void Server::sweepTimeouts() {
 Epoll &Server::getEpoll() { return epoll; }
 
 std::map<int, Cgi *> &Server::getCgiMap() { return cgiMap; }
+
+  //std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
+  //std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
+  //std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;

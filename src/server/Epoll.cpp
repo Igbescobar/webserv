@@ -69,10 +69,10 @@ int Epoll::wait() {
   return numEvents;
 }
 
-void Epoll::printRegistered() const {
+/*void Epoll::printRegistered() const {
     std::cerr << "[EPOLL] registered fds: ";
     for (std::set<int>::const_iterator it = registeredFds.begin();
          it != registeredFds.end(); ++it)
         std::cerr << *it << " ";
     std::cerr << "\n";
-}
+}*/

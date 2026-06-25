@@ -93,26 +93,11 @@ bool Client::read(int clientFd) {
   return true;
 }
 
-void printFds()
-{
-      for (int i = 0; i < 20; i++) {
-        struct stat st;
-        if (fstat(i, &st) == 0) {
-        std::cerr << "  fd=" << i;
-        if (S_ISSOCK(st.st_mode)) std::cerr << " SOCKET";
-        else if (S_ISFIFO(st.st_mode)) std::cerr << " PIPE";
-        else if (S_ISREG(st.st_mode)) std::cerr << " FILE";
-        std::cerr << "\n";
-    }
-}
-}
-
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     HttpResponse response(serverConfig, request);
     if (isCGI())
     {
-      std::cout<<"Entrada aqui\n";
       const LocationConfig *loc = getMatchingLocation(request.getUri());
       if (loc == NULL) {
 	      responseStr = response.getResponse();
@@ -120,11 +105,7 @@ void Client::handleRequestState(t_state state) {
 	      return;
       }
       cgi = new Cgi(request, *loc, clientFd);
-      std::cerr << "[CGI] before pipe, open fds:\n";
-      printFds();
       cgi->execute(server);
-      std::cerr << "[CGI] after pipe, open fds:\n";
-      //printFds();
     }
     else{
       responseStr = response.getResponse();
@@ -167,3 +148,17 @@ void Client::setResponse(const std::string &response)
 {
 	responseStr = response;
 }
+
+/*void printFds()
+{
+      for (int i = 0; i < 20; i++) {
+        struct stat st;
+        if (fstat(i, &st) == 0) {
+        std::cerr << "  fd=" << i;
+        if (S_ISSOCK(st.st_mode)) std::cerr << " SOCKET";
+        else if (S_ISFIFO(st.st_mode)) std::cerr << " PIPE";
+        else if (S_ISREG(st.st_mode)) std::cerr << " FILE";
+        std::cerr << "\n";
+    }
+}
+}*/

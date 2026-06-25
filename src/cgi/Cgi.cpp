@@ -64,7 +64,7 @@ std::string Cgi::extractExtension() {
       (questionpos != std::string::npos)
           ? request.getUri().substr(dotPos, questionpos - dotPos)
           : request.getUri().substr(dotPos);
-  std::cout << "Extesion path:" << extensionPath << "\n";
+  //std::cout << "Extesion path:" << extensionPath << "\n";
   return extensionPath;
 }
 
@@ -89,7 +89,6 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
   chdir(scriptDir.c_str());
   dup2(stdinpipe[0], STDIN_FILENO);
   dup2(stdoutpipe[1], STDOUT_FILENO);
-  std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2: "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";
   close(stdinpipe[1]);
   close(stdoutpipe[0]);
   execve(interpreter.c_str(), argv, envp);
@@ -106,9 +105,9 @@ void Cgi::execute(Server &server) {
   std::vector<std::string> env = buildEnv();
 
   std::vector<char *> envp;
-  std::cout << "ENV: " << "\n";
+  //std::cout << "ENV: " << "\n";
   for (size_t i = 0; i < env.size(); i++) {
-    std::cout << env[i] << "\n";
+    //std::cout << env[i] << "\n";
     envp.push_back(const_cast<char *>(env[i].c_str()));
   }
   envp.push_back(NULL);
@@ -122,8 +121,6 @@ void Cgi::execute(Server &server) {
   setCloseOnExec(stdinpipe[1]);
   setCloseOnExec(stdoutpipe[0]);
   setCloseOnExec(stdoutpipe[1]);
-  std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," << stdinpipe[1] 
-              << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] << "]\n";
   pid = fork();
   if (pid < 0)
     return ;
@@ -157,3 +154,5 @@ int Cgi::getClientFd()
 {
 	return clientFd;
 }
+  //std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," << stdinpipe[1] << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] << "]\n";
+  //std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2: "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";
