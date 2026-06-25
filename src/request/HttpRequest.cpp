@@ -285,7 +285,7 @@ void HttpRequest::print() const {
   //std::cout << "Headers:\n";
   for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
   {
-	//std::cout << "  " << it->first << ": " << it->second << "\n";
+	std::cout << "  " << it->first << ": " << it->second << "\n";
   }
   //std::cout << "Body:       " << body << "\n";
   //std::cout << "Buf size:   " << buf.size() << "\n";

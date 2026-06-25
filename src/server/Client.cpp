@@ -121,7 +121,7 @@ void Client::handleRequestState(t_state state) {
       }
       cgi = new Cgi(request, *loc, clientFd);
       std::cerr << "[CGI] before pipe, open fds:\n";
-      //printFds();
+      printFds();
       cgi->execute(server);
       std::cerr << "[CGI] after pipe, open fds:\n";
       //printFds();

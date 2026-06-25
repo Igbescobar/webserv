@@ -79,18 +79,16 @@ void Server::handleEvents(int n) {
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
 {
-  epoll.printRegistered();
-	std::cout <<RED<<"-----------------\nTRIGGERED_FD: [" << triggeredFd << "]\n-----------------\n"<<RESET;
+  std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
   if (clientMap.find(triggeredFd) != clientMap.end()) {
-	std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
+       std::cout <<GREEN<<"Found in CLIENT MAP :"<<triggeredFd<<"\n-----------------\n"<<RESET;
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false)
-	{
-      //epoll.remove(triggeredFd);
+    {
+      epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
-	std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
-    // TODO: cgi handle
+      std::cout <<BLUE<<"Found in CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
     Cgi *cgi = cgiMap[triggeredFd];
     if(cgi->handleEvent())
     {
@@ -104,23 +102,22 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask)
       cgiMap.erase(triggeredFd);
       delete cgi;
     }
-    //clientMap.erase(triggeredFd);
   } else {
     handleServer(triggeredFd);
   }
+  epoll.printRegistered();
 }
 
 void Server::handleServer(int serverFd) {
   int clientFd;
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
-  std::cout << "ACCEPT REQUEST FROM SERVER [" << serverFd << "]\n";
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
   if (clientFd < 0) {
     switch (errno) {
     case EMFILE:
     case ENFILE:
-      //std::cout << "fd limit reached" << std::endl;
+      std::cout << "fd limit reached" << std::endl;
     case EAGAIN:
       return;
     default:
