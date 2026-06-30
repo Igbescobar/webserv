@@ -7,16 +7,33 @@
 #include <sys/stat.h>
 #include <vector>
 
+static std::string stripLocationPrefix(const LocationConfig *location,
+                                       const std::string &uri) {
+  if (location == NULL)
+    return uri;
+
+  if (location->getRoot().empty())
+    return uri;
+
+  const std::string &pattern = location->getPattern();
+  if (pattern.empty() || uri.find(pattern) != 0)
+    return uri;
+
+  return uri.substr(pattern.length());
+}
+
 HttpResponse GetResponder::handle(const ServerConfig &config,
                                   const LocationConfig *location,
                                   const HttpRequest &req) {
   const std::string uri = req.getUri();
 
-  if (!FileResponder::isSafeUri(uri))
+  if (!FileResponder::isSafeUri(uri)) {
     return ErrorResponseBuilder::build(config, req, 400);
+  }
 
+  const std::string relativeUri = stripLocationPrefix(location, uri);
   std::string filePath = ResponseIO::joinPath(
-      FileResponder::getDocumentRoot(config, location), uri);
+      FileResponder::getDocumentRoot(config, location), relativeUri);
 
   if (FileResponder::isDirectory(filePath))
     return handleDirectory(config, location, req, uri, filePath);

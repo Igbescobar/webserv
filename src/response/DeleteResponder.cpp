@@ -7,6 +7,21 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static std::string stripLocationPrefix(const LocationConfig *location,
+                                       const std::string &uri) {
+  if (location == NULL)
+    return uri;
+
+  if (location->getRoot().empty())
+    return uri;
+
+  const std::string &pattern = location->getPattern();
+  if (pattern.empty() || uri.find(pattern) != 0)
+    return uri;
+
+  return uri.substr(pattern.length());
+}
+
 HttpResponse DeleteResponder::handle(const ServerConfig &config,
                                      const LocationConfig *location,
                                      const HttpRequest &req) {
@@ -16,7 +31,8 @@ HttpResponse DeleteResponder::handle(const ServerConfig &config,
     return ErrorResponseBuilder::build(config, req, 400);
 
   const std::string docRoot = FileResponder::getDocumentRoot(config, location);
-  const std::string fsPath = ResponseIO::joinPath(docRoot, uri);
+  const std::string fsPath =
+      ResponseIO::joinPath(docRoot, stripLocationPrefix(location, uri));
 
   struct stat st;
   if (!statPath(fsPath, st))
