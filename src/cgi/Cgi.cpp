@@ -64,7 +64,6 @@ std::string Cgi::extractExtension() {
       (questionpos != std::string::npos)
           ? request.getUri().substr(dotPos, questionpos - dotPos)
           : request.getUri().substr(dotPos);
-  // std::cout << "Extesion path:" << extensionPath << "\n";
   return extensionPath;
 }
 
@@ -105,9 +104,7 @@ void Cgi::execute(Server &server) {
   std::vector<std::string> env = buildEnv();
 
   std::vector<char *> envp;
-  // std::cout << "ENV: " << "\n";
   for (size_t i = 0; i < env.size(); i++) {
-    // std::cout << env[i] << "\n";
     envp.push_back(const_cast<char *>(env[i].c_str()));
   }
   envp.push_back(NULL);
@@ -145,8 +142,3 @@ t_state Cgi::getState() { return state; }
 std::string Cgi::getOutput() { return this->output; }
 
 int Cgi::getClientFd() { return clientFd; }
-
-// std::cerr << "[CGI] created pipes: stdin[" << stdinpipe[0] << "," <<
-// stdinpipe[1] << "] stdout[" << stdoutpipe[0] << "," << stdoutpipe[1] <<
-// "]\n"; std::cerr<<"[CGI] value of stdinpipe[0] and stdoutpipe[1] after dup2:
-// "<<stdinpipe[0]<<" "<<stdoutpipe[1]<<"\n";

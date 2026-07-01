@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <stdexcept>
-#include <sys/stat.h>
 #include <unistd.h>
 
 Client::Client(int clientSocket, Server &server,
@@ -138,17 +137,3 @@ bool Client::isTimedOut() {
 void Client::setResponse(const std::string &response) {
   responseStr = response;
 }
-
-/*void printFds()
-{
-      for (int i = 0; i < 20; i++) {
-        struct stat st;
-        if (fstat(i, &st) == 0) {
-        std::cerr << "  fd=" << i;
-        if (S_ISSOCK(st.st_mode)) std::cerr << " SOCKET";
-        else if (S_ISFIFO(st.st_mode)) std::cerr << " PIPE";
-        else if (S_ISREG(st.st_mode)) std::cerr << " FILE";
-        std::cerr << "\n";
-    }
-}
-}*/

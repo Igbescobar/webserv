@@ -159,8 +159,3 @@ void Server::sweepTimeouts() {
 Epoll &Server::getEpoll() { return epoll; }
 
 std::map<int, Cgi *> &Server::getCgiMap() { return cgiMap; }
-
-// std::cout <<RED<<"-----------------\nNEW EVENT\n-----------------\n"<<RESET;
-// std::cout <<GREEN<<"Found in CLIENT MAP
-// :"<<triggeredFd<<"\n-----------------\n"<<RESET; std::cout <<BLUE<<"Found in
-// CGI MAP: "<<triggeredFd<<"\n-----------------\n"<<RESET;
