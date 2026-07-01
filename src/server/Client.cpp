@@ -89,6 +89,7 @@ bool Client::read(int clientFd) {
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     if (isCGI()) {
+      const LocationConfig *loc = getMatchingLocation(request.getUri());
       cgi = new Cgi(request, *loc, clientFd);
       cgi->execute(server);
     } else {
@@ -97,7 +98,7 @@ void Client::handleRequestState(t_state state) {
       server.getEpoll().modWrite(clientFd);
     }
   } else if (state == ERROR) {
-    responseStr = HttpResponse(serverConfig, request).handle().getResponse();
+    responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
   } else
     throw std::runtime_error("unknown request state");

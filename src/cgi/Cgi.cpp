@@ -1,5 +1,5 @@
 #include "cgi/Cgi.hpp"
-#include "../inc/parser/config/LocationConfig.hpp"
+#include "parser_config/LocationConfig.hpp"
 #include "utils.hpp"
 #include <fcntl.h>
 #include <sstream>
