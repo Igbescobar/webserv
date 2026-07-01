@@ -1,4 +1,4 @@
-#include "parser/config/ConfigParser.hpp"
+#include "parser_config/ConfigParser.hpp"
 #include "server/Server.hpp"
 #include <iostream>
 
@@ -78,15 +78,6 @@ void logServerConfig(const ServerConfig &config, int serverIndex) {
     const LocationConfig &loc = locations[i];
     std::cout << "    --- Location " << i << " ---" << std::endl;
     std::cout << "    Pattern: " << loc.getPattern() << std::endl;
-
-    std::cout << "    MatchType: ";
-    if (loc.getMatchType() == LocationConfig::PREFIX)
-      std::cout << "PREFIX";
-    else if (loc.getMatchType() == LocationConfig::EXACT)
-      std::cout << "EXACT";
-    else if (loc.getMatchType() == LocationConfig::REGEX)
-      std::cout << "REGEX";
-    std::cout << std::endl;
 
     if (!loc.getRoot().empty())
       std::cout << "    Root: " << loc.getRoot() << std::endl;

@@ -1,8 +1,9 @@
 #include "server/Client.hpp"
 #include "cgi/Cgi.hpp"
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include "server/Socket.hpp"
 #include "utils.hpp"
 #include <ctime>
@@ -46,7 +47,7 @@ bool Client::read(int clientFd) {
     return false;
 
   buffer[bytesRead] = '\0';
-  request.append(buffer);
+  request.append(std::string(buffer, bytesRead));
 
   handleRequestState(request.getState());
   return true;
