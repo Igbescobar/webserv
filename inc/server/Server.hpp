@@ -1,7 +1,7 @@
 #pragma once
 
-#include "parser/config/ConfigParser.hpp"
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ConfigParser.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include "server/Client.hpp"
 #include "server/Epoll.hpp"
 #include "server/Socket.hpp"

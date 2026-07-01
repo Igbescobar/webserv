@@ -2,8 +2,11 @@ webserv
 *.o
 *.swp
 .vscode/
-.clangd
+.clang-format
 .DS_Store
 obj/
+my_tester
 compile_commands.json
 .cache/
+.cgi_tester
+.tester
