@@ -50,6 +50,7 @@ std::string Cgi::extractScriptPath() {
           ? request.getUri().substr(filePosition, queryPos - filePosition)
           : request.getUri().substr(filePosition);
   fileName.erase(0, 1);
+  std::cout<<"ROOOOOOOOOOOOOOOOOOOOOOOOOOOT :"<<fileName;
   return location.getRoot() + fileName;
 }
 

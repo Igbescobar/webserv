@@ -41,7 +41,6 @@ bool Client::isCGI() {
   size_t dotPos = uri.find_last_of('.');
   std::cout << uri << "\n";
   if (dotPos == std::string::npos) {
-    std::cout << "Does not have extension\n";
     return false;
   }
   size_t questionpos = uri.find('?', dotPos);
@@ -50,7 +49,6 @@ bool Client::isCGI() {
   for (size_t i = 0; i < locations.size(); i++) {
     const std::vector<std::string> &exts = locations[i].getCgiPassExtensions();
     for (size_t j = 0; j < exts.size(); j++) {
-      std::cout << exts[j] << "\n";
       if (exts[j] == ext)
         return true;
     }
@@ -94,7 +92,7 @@ void Client::handleRequestState(t_state state) {
       cgi->execute(server);
     } else {
       responseStr =
-      	ResponseHandler(serverConfig, request).handle().getResponse();
+      ResponseHandler(serverConfig, request).handle().getResponse();
       server.getEpoll().modWrite(clientFd);
     }
   } else if (state == ERROR) {
