@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cgi/Cgi.hpp"
 #include "parser_config/ConfigParser.hpp"
 #include "parser_config/ServerConfig.hpp"
 #include "server/Client.hpp"
@@ -11,10 +12,14 @@
 #include <sys/epoll.h>
 #include <vector>
 
+class Client;
+class Cgi;
+
 class Server {
 private:
   std::vector<Socket *> Sockets;
   std::map<int, Client *> clientMap;
+  std::map<int, Cgi *> cgiMap;
   const ConfigParser &globalConfig;
   Epoll epoll;
   static volatile sig_atomic_t isRunning;
@@ -36,4 +41,6 @@ public:
   ~Server();
   void run();
   static void sigintHandler(int signum);
+  Epoll &getEpoll();
+  std::map<int, Cgi *> &getCgiMap();
 };

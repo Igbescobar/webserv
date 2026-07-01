@@ -5,6 +5,8 @@
 
 class ServerConfig;
 
+#define STATUS_LINE "HTTP/1.1 200 OK\n"
+
 class HttpResponse {
 private:
   std::string version;
