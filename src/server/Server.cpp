@@ -72,7 +72,6 @@ void Server::run() {
 }
 
 void Server::handleEvents(int n) {
-  if (n > 0)
     for (int i = 0; i < n; i++)
       handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
