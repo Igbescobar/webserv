@@ -1,6 +1,5 @@
 #include "server/Client.hpp"
 #include "cgi/Cgi.hpp"
-#include "cgi/CgiConstructor.hpp"
 #include "parser/config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"

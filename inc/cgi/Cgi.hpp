@@ -1,5 +1,4 @@
-#ifndef CGIHANDLER_HPP
-#define CGIHANDLER_HPP
+#pragma once
 #include "request/HttpRequest.hpp"
 #include "server/Server.hpp"
 #include <iostream>
@@ -37,4 +36,3 @@ public:
   std::string buildResponse(std::string &output);
   int getClientFd();
 };
-#endif
