@@ -100,8 +100,10 @@ void Client::handleRequestState(t_state state) {
   } else if (state == ERROR) {
     responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
-  } else
-    throw std::runtime_error("unknown request state");
+  } else if (state == INCOMPLETE)
+      return;
+    else
+      throw std::runtime_error("unknown request state");
 }
 
 bool Client::write(int clientFd) {
