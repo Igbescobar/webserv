@@ -35,11 +35,12 @@ bool Client::handleEvent(uint32_t eventsMask) {
   return false;
 }
 
+// TODO: delete
 bool Client::isCGI() {
   std::string method = request.getMethod();
   std::string uri = request.getUri();
   size_t dotPos = uri.find_last_of('.');
-  std::cout << uri << "\n";
+  std::cout << "uri: " << uri << "\n";
   if (dotPos == std::string::npos) {
     std::cout << "Does not have extension\n";
     return false;
@@ -58,6 +59,7 @@ bool Client::isCGI() {
   return false;
 }
 
+// TODO: delete
 const LocationConfig *Client::getMatchingLocation(const std::string &uri) {
   const std::vector<LocationConfig> &locations = serverConfig.getLocations();
   size_t secondSlash = uri.find('/', 1);
@@ -88,22 +90,25 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
+    // TODO: call Ignacio function
     if (isCGI()) {
       const LocationConfig *loc = getMatchingLocation(request.getUri());
+      if (!loc)
+        throw std::runtime_error("not matching location");
       cgi = new Cgi(request, *loc, clientFd);
       cgi->execute(server);
     } else {
       responseStr =
-      	ResponseHandler(serverConfig, request).handle().getResponse();
+          ResponseHandler(serverConfig, request).handle().getResponse();
       server.getEpoll().modWrite(clientFd);
     }
   } else if (state == ERROR) {
     responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
   } else if (state == INCOMPLETE)
-      return;
-    else
-      throw std::runtime_error("unknown request state");
+    return;
+  else
+    throw std::runtime_error("unknown request state");
 }
 
 bool Client::write(int clientFd) {

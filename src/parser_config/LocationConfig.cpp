@@ -1,4 +1,5 @@
 #include "parser_config/LocationConfig.hpp"
+#include <iostream>
 #include <string>
 
 LocationConfig::LocationConfig()
@@ -65,7 +66,10 @@ void LocationConfig::addCgiPassExtensions(const std::string &extension) {
 
 const std::string &LocationConfig::getPattern() const { return pattern; }
 
-const std::string &LocationConfig::getRoot() const { return root; }
+const std::string &LocationConfig::getRoot() const {
+  std::cout << "hey" << std::endl;
+  return root;
+}
 
 const std::vector<std::string> &LocationConfig::getIndexes() const {
   return index;

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #define BUF_SIZE 4096
 
+// TODO: delete location (not needed)
 Cgi::Cgi(HttpRequest &request, const LocationConfig &location, int clientFd)
     : request(request), location(location), clientFd(clientFd) {}
 
@@ -38,6 +39,7 @@ bool Cgi::handleEvent() {
   return true;
 }
 
+// TODO: delete
 std::string Cgi::extractScriptPath() {
   size_t filePosition = request.getUri().find_last_of('/');
   if (filePosition == std::string::npos) {
@@ -95,6 +97,7 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
 }
 
 void Cgi::execute(Server &server) {
+  // TODO: call Ignacio function
   scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
