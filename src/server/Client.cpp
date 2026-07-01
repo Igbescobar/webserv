@@ -1,8 +1,9 @@
 #include "server/Client.hpp"
 #include "cgi/Cgi.hpp"
-#include "parser/config/ServerConfig.hpp"
+#include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include "server/Socket.hpp"
 #include "utils.hpp"
 #include <ctime>
@@ -79,7 +80,7 @@ bool Client::read(int clientFd) {
     return false;
 
   buffer[bytesRead] = '\0';
-  request.append(buffer);
+  request.append(std::string(buffer, bytesRead));
 
   handleRequestState(request.getState());
   return true;
@@ -87,23 +88,16 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
-    HttpResponse response(serverConfig, request);
     if (isCGI()) {
-      const LocationConfig *loc = getMatchingLocation(request.getUri());
-      if (loc == NULL) {
-        responseStr = response.getResponse();
-        server.getEpoll().modWrite(clientFd);
-        return;
-      }
       cgi = new Cgi(request, *loc, clientFd);
       cgi->execute(server);
     } else {
-      responseStr = response.getResponse();
+      responseStr =
+      	ResponseHandler(serverConfig, request).handle().getResponse();
       server.getEpoll().modWrite(clientFd);
     }
   } else if (state == ERROR) {
-    responseStr =
-        HttpResponse(serverConfig, request.getErrorCode()).getResponse();
+    responseStr = HttpResponse(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
   } else
     throw std::runtime_error("unknown request state");
