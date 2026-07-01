@@ -30,6 +30,7 @@ public:
   HttpResponse &operator=(const HttpResponse &other);
 
   std::string getResponse();
+  int getErrorCode();
   void erase(int bytes);
   bool empty();
   bool isCgi();

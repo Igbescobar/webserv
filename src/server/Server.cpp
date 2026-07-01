@@ -17,6 +17,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define BLUE "\033[34m"
+#define RESET "\033[0m"
+
 volatile sig_atomic_t Server::isRunning = 1;
 
 Server::Server(const ConfigParser &configParser) : globalConfig(configParser) {
@@ -66,18 +72,29 @@ void Server::run() {
 }
 
 void Server::handleEvents(int n) {
-  for (int i = 0; i < n; i++)
-    handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
+    for (int i = 0; i < n; i++)
+      handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
   if (clientMap.find(triggeredFd) != clientMap.end()) {
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
+      epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
-    // TODO: cgi handle
-    cgiMap[triggeredFd]->handleEvent();
+    Cgi *cgi = cgiMap[triggeredFd];
+    if (cgi->handleEvent()) {
+      int targetFd = cgi->getClientFd();
+      if (clientMap.count(targetFd)) {
+        clientMap[targetFd]->setResponse(cgi->getOutput());
+        epoll.modWrite(targetFd);
+      }
+      epoll.remove(triggeredFd);
+      close(triggeredFd);
+      cgiMap.erase(triggeredFd);
+      delete cgi;
+    }
   } else {
     handleServer(triggeredFd);
   }
@@ -87,7 +104,6 @@ void Server::handleServer(int serverFd) {
   int clientFd;
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
-
   clientFd = accept(serverFd, (struct sockaddr *)&addr, &addr_len);
   if (clientFd < 0) {
     switch (errno) {
@@ -97,10 +113,9 @@ void Server::handleServer(int serverFd) {
     case EAGAIN:
       return;
     default:
-      throw std::runtime_error("accept: " + std::string(strerror(errno)));
+      throw std::runtime_error("accept 103: " + std::string(strerror(errno)));
     }
   }
-
   try {
     clientMap[clientFd] =
         new Client(clientFd, *this, getServerConfig(serverFd));

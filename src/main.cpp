@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
 void logServerConfig(const ServerConfig &config, int serverIndex) {
   std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
-
+  (void)serverIndex;
   const std::vector<std::string> &ips = config.getIPs();
   const std::vector<int> &ports = config.getPorts();
   for (size_t j = 0; j < ips.size(); ++j) {

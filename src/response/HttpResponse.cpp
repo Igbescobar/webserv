@@ -35,6 +35,7 @@ HttpResponse &HttpResponse::operator=(const HttpResponse &other) {
 }
 
 std::string HttpResponse::getResponse() { return response; }
+int HttpResponse::getErrorCode() { return errorCode; }
 
 void HttpResponse::erase(int bytes) { response.erase(0, bytes); }
 

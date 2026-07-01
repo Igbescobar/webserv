@@ -29,6 +29,9 @@ private:
   bool read(int clientFd);
   bool write(int clientFd);
 
+  bool isCGI();
+  const LocationConfig *getMatchingLocation(const std::string &uri);
+
   void handleRequestState(t_state state);
 
   void updateActivity();
@@ -39,4 +42,5 @@ public:
 
   bool handleEvent(uint32_t eventsMask);
   bool isTimedOut();
+  void setResponse(const std::string &response);
 };

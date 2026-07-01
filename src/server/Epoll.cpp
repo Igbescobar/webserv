@@ -39,6 +39,7 @@ void Epoll::addRead(int fd) {
 
   if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) < 0)
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  registeredFds.insert(fd);
 }
 
 void Epoll::modWrite(int fd) {
@@ -55,6 +56,7 @@ void Epoll::modWrite(int fd) {
 void Epoll::remove(int fd) {
   if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL) < 0)
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  registeredFds.erase(fd);
 }
 
 int Epoll::wait() {
@@ -66,3 +68,11 @@ int Epoll::wait() {
     throw std::runtime_error("epoll_wait: " + std::string(strerror(errno)));
   return numEvents;
 }
+
+/*void Epoll::printRegistered() const {
+    std::cerr << "[EPOLL] registered fds: ";
+    for (std::set<int>::const_iterator it = registeredFds.begin();
+         it != registeredFds.end(); ++it)
+        std::cerr << *it << " ";
+    std::cerr << "\n";
+}*/

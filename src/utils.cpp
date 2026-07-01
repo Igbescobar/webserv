@@ -10,6 +10,6 @@ void setNonBlocking(int fd) {
 }
 
 void setCloseOnExec(int fd) {
-  if (fcntl(fd, F_SETFL, FD_CLOEXEC) < 0)
+  if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
     throw std::runtime_error("fcntl: " + std::string(strerror(errno)));
 }
