@@ -43,4 +43,7 @@ public:
   bool handleEvent(uint32_t eventsMask);
   bool isTimedOut();
   void setResponse(const std::string &response);
+  void sendError(int code);
+  const ServerConfig &getServerConfig() const;
+  const HttpRequest &getRequest() const;
 };
