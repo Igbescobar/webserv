@@ -17,6 +17,7 @@ private:
   int clientFd;
   int pipeFd;
   pid_t pid;
+  int errorCode;
 
   std::string getInterpreter(const std::string &ext);
   std::string extractScriptPath();
@@ -26,6 +27,7 @@ private:
   std::string readPipe(int stdoutPipe[2]);
   void setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
                   char **envp);
+
 public:
   Cgi(HttpRequest &request, const LocationConfig &location, int clientFd);
   ~Cgi();
@@ -33,6 +35,6 @@ public:
   std::string getOutput();
   bool handleEvent();
   t_state getState();
-  std::string buildResponse(std::string &output);
+  int getErrorCode();
   int getClientFd();
 };

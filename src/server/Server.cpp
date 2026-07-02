@@ -1,8 +1,10 @@
 #include "server/Server.hpp"
-#include "request/HttpRequest.hpp"
 #include "parser_config/ConfigParser.hpp"
 #include "parser_config/ServerConfig.hpp"
+#include "request/HttpRequest.hpp"
+#include "response/CgiResponder.hpp"
 #include "response/HttpResponse.hpp"
+#include "response/ResponseHandler.hpp"
 #include "server/Client.hpp"
 #include "server/Socket.hpp"
 #include "utils.hpp"
@@ -72,8 +74,8 @@ void Server::run() {
 }
 
 void Server::handleEvents(int n) {
-    for (int i = 0; i < n; i++)
-      handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
+  for (int i = 0; i < n; i++)
+    handleSingleEvent(epoll.getEventsFd(i), epoll.getEventsMask(i));
 }
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
@@ -87,8 +89,16 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
     if (cgi->handleEvent()) {
       int targetFd = cgi->getClientFd();
       if (clientMap.count(targetFd)) {
-        clientMap[targetFd]->setResponse(cgi->getOutput());
-        epoll.modWrite(targetFd);
+        std::string output = cgi->getOutput();
+        if (cgi->getState() == ERROR || output.empty())
+          clientMap[targetFd]->sendError(500);
+        else {
+          clientMap[targetFd]->setResponse(
+              CgiResponder::handle(clientMap[targetFd]->getServerConfig(),
+                                   clientMap[targetFd]->getRequest(), output)
+                  .getResponse());
+          epoll.modWrite(targetFd);
+        }
       }
       epoll.remove(triggeredFd);
       close(triggeredFd);

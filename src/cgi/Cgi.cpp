@@ -8,7 +8,8 @@
 #define BUF_SIZE 4096
 
 Cgi::Cgi(HttpRequest &request, const LocationConfig &location, int clientFd)
-    : request(request), location(location), clientFd(clientFd) {}
+    : request(request), location(location), state(INCOMPLETE),
+      clientFd(clientFd), errorCode(0) {}
 
 Cgi::~Cgi() {}
 
@@ -85,8 +86,6 @@ std::vector<std::string> Cgi::buildEnv() {
 
 void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
                      char **envp) {
-  std::string scriptDir = scriptPath.substr(0, scriptPath.find_last_of('/'));
-  chdir(scriptDir.c_str());
   dup2(stdinpipe[0], STDIN_FILENO);
   dup2(stdoutpipe[1], STDOUT_FILENO);
   close(stdinpipe[1]);
@@ -95,10 +94,24 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
   exit(1);
 }
 
+int Cgi::getErrorCode() { return errorCode; }
+
 void Cgi::execute(Server &server) {
   scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
+
+  if (access(scriptPath.c_str(), F_OK) != 0) {
+    state = ERROR;
+    errorCode = 404;
+    return;
+  }
+  if (access(scriptPath.c_str(), R_OK) != 0) {
+    state = ERROR;
+    errorCode = 403;
+    return;
+  }
+
   char *argv[] = {const_cast<char *>(interpreter.c_str()),
                   const_cast<char *>(scriptPath.c_str()), NULL};
 

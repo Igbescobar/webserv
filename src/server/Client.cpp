@@ -2,6 +2,8 @@
 #include "cgi/Cgi.hpp"
 #include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
+#include "response/CgiTargetResolver.hpp"
+#include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
 #include "response/ResponseHandler.hpp"
 #include "server/Socket.hpp"
@@ -35,39 +37,6 @@ bool Client::handleEvent(uint32_t eventsMask) {
   return false;
 }
 
-bool Client::isCGI() {
-  std::string method = request.getMethod();
-  std::string uri = request.getUri();
-  size_t dotPos = uri.find_last_of('.');
-  std::cout << uri << "\n";
-  if (dotPos == std::string::npos) {
-    return false;
-  }
-  size_t questionpos = uri.find('?', dotPos);
-  std::string ext = uri.substr(dotPos, questionpos - dotPos);
-  const std::vector<LocationConfig> &locations = serverConfig.getLocations();
-  for (size_t i = 0; i < locations.size(); i++) {
-    const std::vector<std::string> &exts = locations[i].getCgiPassExtensions();
-    for (size_t j = 0; j < exts.size(); j++) {
-      if (exts[j] == ext)
-        return true;
-    }
-  }
-  return false;
-}
-
-const LocationConfig *Client::getMatchingLocation(const std::string &uri) {
-  const std::vector<LocationConfig> &locations = serverConfig.getLocations();
-  size_t secondSlash = uri.find('/', 1);
-  std::string segment = uri.substr(0, secondSlash);
-
-  for (size_t i = 0; i < locations.size(); i++) {
-    if (locations[i].getPattern() == segment)
-      return &locations[i];
-  }
-  return NULL;
-}
-
 bool Client::read(int clientFd) {
   char buffer[BUF_SIZE + 1];
   int bytesRead;
@@ -86,19 +55,29 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
-    if (isCGI()) {
-      const LocationConfig *loc = getMatchingLocation(request.getUri());
-      cgi = new Cgi(request, *loc, clientFd);
+    CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
+    if (target.isCgi) {
+      cgi = new Cgi(request, *target.location, clientFd);
       cgi->execute(server);
+      if (cgi->getState() == ERROR) {
+        responseStr = ErrorResponseBuilder::build(serverConfig, request,
+                                                  cgi->getErrorCode())
+                          .getResponse();
+        delete cgi;
+        cgi = NULL;
+        server.getEpoll().modWrite(clientFd);
+      }
     } else {
       responseStr =
-      ResponseHandler(serverConfig, request).handle().getResponse();
+          ResponseHandler(serverConfig, request).handle().getResponse();
       server.getEpoll().modWrite(clientFd);
     }
   } else if (state == ERROR) {
     responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
-  } else
+  } else if (state == INCOMPLETE)
+    return;
+  else
     throw std::runtime_error("unknown request state");
 }
 
@@ -130,3 +109,12 @@ bool Client::isTimedOut() {
 void Client::setResponse(const std::string &response) {
   responseStr = response;
 }
+
+void Client::sendError(int code) {
+  responseStr = ErrorResponseBuilder::build(serverConfig, code).getResponse();
+  server.getEpoll().modWrite(clientFd);
+}
+
+const ServerConfig &Client::getServerConfig() const { return serverConfig; }
+
+const HttpRequest &Client::getRequest() const { return request; }
