@@ -7,3 +7,5 @@ webserv
 obj/
 compile_commands.json
 .cache/
+tester
+cgi_tester

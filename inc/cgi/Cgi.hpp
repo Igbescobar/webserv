@@ -6,9 +6,9 @@
 
 #define CGI_SAMPLE_OUTPUT                                                      \
   "Content-Type: text/plain\n"                                                 \
-  "Content-Length: 13\n"                                                       \
+  "Content-Length: 18\n"                                                       \
   "\n"                                                                         \
-  "Hello world!\n"
+  "CGI_SAMPLE_OUTPUT\n"
 
 class Server;
 class Client;

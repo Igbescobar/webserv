@@ -22,7 +22,10 @@ Client::Client(int clientSocket, Server &server,
   requestSize = 0;
 }
 
-Client::~Client() { close(clientFd); }
+Client::~Client() {
+  server.getEpoll().remove(clientFd);
+  close(clientFd);
+}
 
 bool Client::handleEvent(uint32_t eventsMask) {
   updateActivity();

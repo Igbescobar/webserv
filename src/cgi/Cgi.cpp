@@ -2,8 +2,11 @@
 #include "request/HttpRequest.hpp"
 #include "server/Client.hpp"
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
+#include <sys/types.h>
 #include <unistd.h>
 
 Cgi::Cgi(Server &server, std::string path)
@@ -11,10 +14,23 @@ Cgi::Cgi(Server &server, std::string path)
   if (pipe(pipefd) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
 
-  write(pipefd[1], CGI_SAMPLE_OUTPUT, sizeof(CGI_SAMPLE_OUTPUT));
-
   server.getCgiMap()[pipefd[0]] = this;
   server.getEpoll().addRead(pipefd[0]);
+
+  pid_t pid = fork();
+  if (pid < 0) {
+    throw std::runtime_error("fork: " + std::string(strerror(errno)));
+  } else if (pid == 0) {
+    close(pipefd[0]);
+    dup2(pipefd[1], 1);
+    close(pipefd[1]);
+    char *argv[] = {const_cast<char *>("sample"), NULL};
+    char *envp[] = {NULL};
+    execve(path.c_str(), argv, envp);
+    std::cerr << "execve: " << strerror(errno) << std::endl;
+    exit(127);
+  }
+  close(pipefd[1]);
 }
 
 void Cgi::handleEvent() {
@@ -24,6 +40,8 @@ void Cgi::handleEvent() {
   buf[bytesRead] = '\0';
   output += buf;
   state = COMPLETE;
+  server.getEpoll().remove(pipefd[0]);
+  close(pipefd[0]);
 }
 
 std::string Cgi::getOutput() { return output; }

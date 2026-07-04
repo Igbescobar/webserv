@@ -42,4 +42,4 @@ bool HttpResponse::empty() { return response.empty(); }
 
 bool HttpResponse::isCgi() { return true; }
 
-std::string HttpResponse::getCgiPath() { return ""; }
+std::string HttpResponse::getCgiPath() { return "./cgi-scripts/file.py"; }
