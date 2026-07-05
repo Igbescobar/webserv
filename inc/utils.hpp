@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <map>
+#include <vector>
 
 void setNonBlocking(int fd);
 void setCloseOnExec(int fd);
@@ -21,4 +22,17 @@ template <typename K, typename V> void printMap(std::map<K, V> &map) {
     std::cout << "    " << it->first << " = " << it->second << std::endl;
   }
   std::cout << "}" << std::endl;
+}
+
+template <typename T> void printVector(const std::vector<T> &v) {
+  typename std::vector<T>::const_iterator it;
+
+  std::cout << "[" << std::endl;
+  for (it = v.begin(); it != v.end(); ++it) {
+    if (*it == NULL)
+      std::cout << "    " << "NULL" << std::endl;
+    else
+      std::cout << "    " << *it << std::endl;
+  }
+  std::cout << "]" << std::endl;
 }

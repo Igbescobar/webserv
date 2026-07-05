@@ -21,11 +21,15 @@ private:
   Server &server;
   std::string path;
   std::string output;
+  HttpRequest req;
   int pipefd[2];
   t_state state;
 
+  std::vector<std::string> buildEnv();
+  std::string extractQuery();
+
 public:
-  Cgi(Server &server, std::string path);
+  Cgi(Server &server, std::string path, HttpRequest &req);
 
   void handleEvent();
 

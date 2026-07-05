@@ -56,7 +56,7 @@ void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     HttpResponse response(serverConfig, request);
     if (response.isCgi())
-      cgi = new Cgi(server, response.getCgiPath());
+      cgi = new Cgi(server, response.getCgiPath(), request);
     else
       responseStr = response.getResponse();
     server.getEpoll().modWrite(clientFd);
