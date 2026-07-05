@@ -33,13 +33,19 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     }
     envp.push_back(NULL);
 
+    // chdir
+    std::string dirPath = path.substr(0, path.find_last_of('/')).c_str();
+    if (chdir(path.substr(0, path.find_last_of('/')).c_str()) < 0)
+      exit(127); // TODO: how to handle this?
+    std::string scriptName = path.substr(path.find_last_of('/') + 1);
+
     // set io
     close(pipefd[0]);
     dup2(pipefd[1], 1);
     close(pipefd[1]);
 
     // run execve
-    execve(path.c_str(), argv, envp.data());
+    execve(scriptName.c_str(), argv, envp.data());
     std::cerr << "execve: " << strerror(errno) << std::endl;
     exit(127);
   }
