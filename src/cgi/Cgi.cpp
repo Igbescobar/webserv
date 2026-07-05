@@ -12,11 +12,11 @@
 
 Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     : server(server), path(path), req(req), state(INCOMPLETE) {
-  if (pipe(pipefd) < 0)
+  if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
 
-  server.getCgiMap()[pipefd[0]] = this;
-  server.getEpoll().addRead(pipefd[0]);
+  server.getCgiMap()[outputPipe[0]] = this;
+  server.getEpoll().addRead(outputPipe[0]);
 
   pid_t pid = fork();
   if (pid < 0) {
@@ -40,27 +40,27 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     std::string scriptName = path.substr(path.find_last_of('/') + 1);
 
     // set io
-    close(pipefd[0]);
-    dup2(pipefd[1], 1);
-    close(pipefd[1]);
+    close(outputPipe[0]);
+    dup2(outputPipe[1], 1);
+    close(outputPipe[1]);
 
     // run execve
     execve(scriptName.c_str(), argv, envp.data());
     std::cerr << "execve: " << strerror(errno) << std::endl;
     exit(127);
   }
-  close(pipefd[1]);
+  close(outputPipe[1]);
 }
 
 void Cgi::handleEvent() {
   char buf[BUF_SIZE + 1];
 
-  int bytesRead = read(pipefd[0], buf, BUF_SIZE);
+  int bytesRead = read(outputPipe[0], buf, BUF_SIZE);
   buf[bytesRead] = '\0';
   output += buf;
   state = COMPLETE;
-  server.getEpoll().remove(pipefd[0]);
-  close(pipefd[0]);
+  server.getEpoll().remove(outputPipe[0]);
+  close(outputPipe[0]);
 }
 
 std::string Cgi::getOutput() { return output; }

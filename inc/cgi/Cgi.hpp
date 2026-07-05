@@ -22,7 +22,8 @@ private:
   std::string path;
   std::string output;
   HttpRequest req;
-  int pipefd[2];
+  int outputPipe[2];
+  int bodyPipe[2];
   t_state state;
 
   std::vector<std::string> buildEnv();
