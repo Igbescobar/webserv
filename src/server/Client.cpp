@@ -2,6 +2,8 @@
 #include "cgi/Cgi.hpp"
 #include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
+#include "response/CgiTargetResolver.hpp"
+#include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
 #include "response/ResponseHandler.hpp"
 #include "server/Socket.hpp"
@@ -55,25 +57,42 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
-    HttpResponse response(serverConfig, request);
-    if (response.isCgi())
-      cgi = new Cgi(server, response.getCgiPath(), request);
-    else
-      responseStr = response.getResponse();
-    server.getEpoll().modWrite(clientFd);
+    CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
+    if (target.isCgi) {
+      cgi = new Cgi(server, target.scriptPath, request);
+      // TODO: check this
+      // if (cgi->getState() == ERROR) {
+      //   responseStr = ErrorResponseBuilder::build(serverConfig, request,
+      //                                             cgi->getErrorCode())
+      //                     .getResponse();
+      // delete cgi;
+      // cgi = NULL;
+      // server.getEpoll().modWrite(clientFd);
+      // }
+      server.getEpoll().modWrite(clientFd);
+    } else {
+      responseStr =
+          ResponseHandler(serverConfig, request).handle().getResponse();
+      server.getEpoll().modWrite(clientFd);
+    }
   } else if (state == ERROR) {
-    responseStr =
-        HttpResponse(serverConfig, request.getErrorCode()).getResponse();
+    responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
-  } else
+  } else if (state == INCOMPLETE) {
+    return;
+  } else {
     throw std::runtime_error("unknown request state");
+  }
 }
 
 bool Client::write(int clientFd) {
   if (cgi) {
     if (cgi->getState() == INCOMPLETE)
       return true;
-    responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
+    // responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
+    HttpResponse response;
+    response.setBody(cgi->getOutput());
+    responseStr = response.getResponse();
     delete cgi;
     cgi = NULL;
   }
