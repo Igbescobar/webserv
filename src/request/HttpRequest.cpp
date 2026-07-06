@@ -19,6 +19,7 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {

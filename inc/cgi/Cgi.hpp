@@ -26,7 +26,7 @@ private:
   Server &server;
   std::string path;
   std::string output;
-  HttpRequest req;
+  HttpRequest _req;
   int outputPipe[2];
   // int bodyPipe[2];
   t_state state;
