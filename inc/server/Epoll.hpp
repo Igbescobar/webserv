@@ -19,6 +19,7 @@ public:
   int getEventsMask(unsigned int idx);
 
   void addRead(int fd);
+  void addWrite(int fd);
   void modWrite(int fd);
   void remove(int fd);
   int wait();

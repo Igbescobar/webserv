@@ -14,14 +14,23 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     : server(server), path(path), req(req), state(INCOMPLETE) {
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
+  if (req.getMethod() == "POST") {
+    if (pipe(bodyPipe) < 0)
+      throw std::runtime_error("pipe: " + std::string(strerror(errno)));
+    server.getCgiMap()[bodyPipe[1]] = this;
+    server.getEpoll().addWrite(bodyPipe[1]);
+    cgiState = SENDING_BODY;
+  } else {
+    cgiState = READING_OUTPUT;
+  }
 
   server.getCgiMap()[outputPipe[0]] = this;
   server.getEpoll().addRead(outputPipe[0]);
 
-  pid_t pid = fork();
-  if (pid < 0) {
+  childPid = fork();
+  if (childPid < 0) {
     throw std::runtime_error("fork: " + std::string(strerror(errno)));
-  } else if (pid == 0) {
+  } else if (childPid == 0) {
     // set argv
     char *argv[] = {const_cast<char *>("sample"), NULL};
 
@@ -52,7 +61,13 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
   close(outputPipe[1]);
 }
 
+// TODO: working here
 void Cgi::handleEvent() {
+  if (cgiState == SENDING_BODY) {
+  } else if (cgiState == READING_OUTPUT) {
+  } else {
+    throw std::runtime_error("unknown cgiState");
+  }
   char buf[BUF_SIZE + 1];
 
   int bytesRead = read(outputPipe[0], buf, BUF_SIZE);

@@ -43,3 +43,5 @@ bool HttpResponse::empty() { return response.empty(); }
 bool HttpResponse::isCgi() { return true; }
 
 std::string HttpResponse::getCgiPath() { return "./cgi-scripts/file.py"; }
+
+int HttpResponse::getErrorCode() { return errorCode; }

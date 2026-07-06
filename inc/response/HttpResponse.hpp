@@ -34,4 +34,5 @@ public:
   bool empty();
   bool isCgi();
   std::string getCgiPath();
+  int getErrorCode();
 };

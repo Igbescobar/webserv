@@ -41,6 +41,18 @@ void Epoll::addRead(int fd) {
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
 }
 
+void Epoll::addWrite(int fd) {
+  struct epoll_event ev;
+
+  std::memset(&ev, 0, sizeof(ev));
+  ev.events = EPOLLOUT;
+  ev.data.fd = fd;
+
+  if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) < 0)
+    throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+}
+
+// from read to write
 void Epoll::modWrite(int fd) {
   struct epoll_event ev;
 

@@ -14,8 +14,9 @@ class Server;
 class Client;
 class Cgi;
 
-// TODO: fds non-blocking! cloexec?
+typedef enum e_cgiState { SENDING_BODY, READING_OUTPUT } t_cgiState;
 
+// TODO: fds non-blocking! cloexec?
 class Cgi {
 private:
   Server &server;
@@ -25,6 +26,8 @@ private:
   int outputPipe[2];
   int bodyPipe[2];
   t_state state;
+  t_cgiState cgiState;
+  pid_t childPid;
 
   std::vector<std::string> buildEnv();
   std::string extractQuery();
