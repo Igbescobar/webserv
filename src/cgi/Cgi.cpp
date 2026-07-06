@@ -7,9 +7,10 @@
 #include <unistd.h>
 #define BUF_SIZE 4096
 
-Cgi::Cgi(HttpRequest &request, const LocationConfig &location, int clientFd)
-    : request(request), location(location), state(INCOMPLETE),
-      clientFd(clientFd), errorCode(0) {}
+Cgi::Cgi(HttpRequest &request, const LocationConfig &location,
+        const std::string &scriptPath, int clientFd)
+    : request(request), location(location), scriptPath(scriptPath),
+      state(INCOMPLETE), clientFd(clientFd), errorCode(0) {}
 
 Cgi::~Cgi() {}
 
@@ -20,6 +21,8 @@ std::string Cgi::getInterpreter(const std::string &ext) {
     return "/usr/bin/php-cgi";
   if (ext == ".sh")
     return "/bin/bash";
+  if (ext == ".bla")
+    return "./cgi_tester";
   return "";
 }
 
@@ -37,21 +40,6 @@ bool Cgi::handleEvent() {
   }
   state = ERROR;
   return true;
-}
-
-std::string Cgi::extractScriptPath() {
-  size_t filePosition = request.getUri().find_last_of('/');
-  if (filePosition == std::string::npos) {
-    std::cout << "Does not have a correct file name";
-    return "";
-  }
-  size_t queryPos = request.getUri().find('?', filePosition);
-  std::string fileName =
-      (queryPos != std::string::npos)
-          ? request.getUri().substr(filePosition, queryPos - filePosition)
-          : request.getUri().substr(filePosition);
-  fileName.erase(0, 1);
-  return location.getRoot() + fileName;
 }
 
 std::string Cgi::extractExtension() {
@@ -75,11 +63,19 @@ std::string Cgi::extractQuery() {
 }
 
 std::vector<std::string> Cgi::buildEnv() {
+  size_t queryPos = request.getUri().find('?');
+  std::string pathInfo = (queryPos != std::string::npos)
+                             ? request.getUri().substr(0, queryPos)
+                             : request.getUri();
+
   std::vector<std::string> env;
   env.push_back("REQUEST_METHOD=" + request.getMethod());
   env.push_back("CONTENT_LENGTH=" + request.getHeader("content-length"));
   env.push_back("CONTENT_TYPE=" + request.getHeader("content-type"));
   env.push_back("QUERY_STRING=" + query);
+  env.push_back("SERVER_PROTOCOL=" + request.getVersion());
+  env.push_back("REQUEST_URI=" + request.getUri());
+  env.push_back("PATH_INFO=" + pathInfo);
   return env;
 }
 
@@ -96,7 +92,6 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
 int Cgi::getErrorCode() { return errorCode; }
 
 void Cgi::execute(Server &server) {
-  scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
 
@@ -110,7 +105,6 @@ void Cgi::execute(Server &server) {
     errorCode = 403;
     return;
   }
-
   char *argv[] = {const_cast<char *>(interpreter.c_str()),
                   const_cast<char *>(scriptPath.c_str()), NULL};
 

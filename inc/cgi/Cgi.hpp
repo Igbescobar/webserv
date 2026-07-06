@@ -20,7 +20,6 @@ private:
   int errorCode;
 
   std::string getInterpreter(const std::string &ext);
-  std::string extractScriptPath();
   std::string extractExtension();
   std::string extractQuery();
   std::vector<std::string> buildEnv();
@@ -29,7 +28,8 @@ private:
                   char **envp);
 
 public:
-  Cgi(HttpRequest &request, const LocationConfig &location, int clientFd);
+  Cgi(HttpRequest &request, const LocationConfig &location,
+      const std::string &scriptPath, int clientFd);
   ~Cgi();
   void execute(Server &server);
   std::string getOutput();

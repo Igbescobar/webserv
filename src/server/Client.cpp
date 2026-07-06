@@ -57,7 +57,7 @@ void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
     if (target.isCgi) {
-      cgi = new Cgi(request, *target.location, clientFd);
+      cgi = new Cgi(request, *target.location, target.scriptPath, clientFd);
       cgi->execute(server);
       if (cgi->getState() == ERROR) {
         responseStr = ErrorResponseBuilder::build(serverConfig, request,
