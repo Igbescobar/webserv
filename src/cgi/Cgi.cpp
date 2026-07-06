@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
-    : server(server), path(path), req(req), state(INCOMPLETE) {
+    : server(server), path(path), _req(req), state(INCOMPLETE) {
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
   if (req.getMethod() == "POST") {
@@ -85,18 +85,18 @@ t_state Cgi::getState() { return state; }
 // TODO: missing variables
 std::vector<std::string> Cgi::buildEnv() {
   std::vector<std::string> env;
-  env.push_back("REQUEST_METHOD=" + req.getMethod());
-  env.push_back("CONTENT_LENGTH=" + req.getHeader("content-length"));
-  env.push_back("CONTENT_TYPE=" + req.getHeader("content-type"));
+  env.push_back("REQUEST_METHOD=" + _req.getMethod());
+  env.push_back("CONTENT_LENGTH=" + _req.getHeader("content-length"));
+  env.push_back("CONTENT_TYPE=" + _req.getHeader("content-type"));
   env.push_back("QUERY_STRING=" + extractQuery());
   return env;
 }
 
 std::string Cgi::extractQuery() {
-  size_t queryPos = req.getUri().find('?');
+  size_t queryPos = _req.getUri().find('?');
 
   if (queryPos != std::string::npos)
-    return req.getUri().substr(queryPos + 1);
+    return _req.getUri().substr(queryPos + 1);
   else
     return "";
 }

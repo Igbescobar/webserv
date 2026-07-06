@@ -17,14 +17,19 @@ class Cgi;
 typedef enum e_cgiState { SENDING_BODY, READING_OUTPUT } t_cgiState;
 
 // TODO: fds non-blocking! cloexec?
+//
+// TODO:
+// kill process if it takes too long
+// use /usr/bin/python3, php, cgi-tester, etc
+// send body to cgi
 class Cgi {
 private:
   Server &server;
   std::string path;
   std::string output;
-  HttpRequest req;
+  HttpRequest _req;
   int outputPipe[2];
-  int bodyPipe[2];
+  // int bodyPipe[2];
   t_state state;
   t_cgiState cgiState;
   pid_t childPid;
