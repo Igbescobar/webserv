@@ -2,6 +2,7 @@
 #include "cgi/Cgi.hpp"
 #include "parser_config/ServerConfig.hpp"
 #include "request/HttpRequest.hpp"
+#include "response/CgiResponder.hpp"
 #include "response/CgiTargetResolver.hpp"
 #include "response/ErrorResponseBuilder.hpp"
 #include "response/HttpResponse.hpp"
@@ -89,10 +90,8 @@ bool Client::write(int clientFd) {
   if (cgi) {
     if (cgi->getState() == INCOMPLETE)
       return true;
-    // responseStr = HttpResponse(serverConfig, cgi->getOutput()).getResponse();
-    HttpResponse response;
-    response.setBody(cgi->getOutput());
-    responseStr = response.getResponse();
+    responseStr = CgiResponder::handle(serverConfig, request, cgi->getOutput())
+                      .getResponse();
     delete cgi;
     cgi = NULL;
   }
