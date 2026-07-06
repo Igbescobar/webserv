@@ -29,7 +29,7 @@ private:
   std::string output;
   HttpRequest _req;
   int outputPipe[2];
-  // int bodyPipe[2];
+  int bodyPipe[2];
   t_state state;
   t_cgiState cgiState;
   pid_t childPid;
