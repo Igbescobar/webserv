@@ -36,6 +36,8 @@ private:
 
   std::vector<std::string> buildEnv();
   std::string extractQuery();
+  void sendingBody();
+  void readingOutput();
 
 public:
   Cgi(Server &server, std::string path, HttpRequest &req);

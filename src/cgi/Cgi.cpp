@@ -61,13 +61,8 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
   close(outputPipe[1]);
 }
 
-// TODO: working here
-void Cgi::handleEvent() {
-  if (cgiState == SENDING_BODY) {
-  } else if (cgiState == READING_OUTPUT) {
-  } else {
-    throw std::runtime_error("unknown cgiState");
-  }
+// TODO: may not read the whole thing in one call
+void Cgi::readingOutput() {
   char buf[BUF_SIZE + 1];
 
   int bytesRead = read(outputPipe[0], buf, BUF_SIZE);
@@ -76,6 +71,19 @@ void Cgi::handleEvent() {
   state = COMPLETE;
   server.getEpoll().remove(outputPipe[0]);
   close(outputPipe[0]);
+
+  // if it is done, change cgiState to READING_OUTPUT
+}
+
+// TODO: working here
+void Cgi::handleEvent() {
+  if (cgiState == SENDING_BODY) {
+    sendingBody();
+  } else if (cgiState == READING_OUTPUT) {
+    readingOutput();
+  } else {
+    throw std::runtime_error("unknown cgiState");
+  }
 }
 
 std::string Cgi::getOutput() { return output; }
