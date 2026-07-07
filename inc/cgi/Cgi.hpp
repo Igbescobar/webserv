@@ -33,6 +33,7 @@ private:
   t_state state;
   t_cgiState cgiState;
   pid_t childPid;
+  std::string reqBody;
 
   std::vector<std::string> buildEnv();
   std::string extractQuery();

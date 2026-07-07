@@ -11,21 +11,21 @@
 #include <unistd.h>
 
 Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
-    : server(server), path(path), _req(req), state(INCOMPLETE) {
+    : server(server), path(path), _req(req), state(INCOMPLETE),
+      reqBody(req.getBody()) {
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
   if (req.getMethod() == "POST") {
     if (pipe(bodyPipe) < 0)
       throw std::runtime_error("pipe: " + std::string(strerror(errno)));
+    cgiState = SENDING_BODY;
     server.getCgiMap()[bodyPipe[1]] = this;
     server.getEpoll().addWrite(bodyPipe[1]);
-    cgiState = SENDING_BODY;
   } else {
     cgiState = READING_OUTPUT;
+    server.getCgiMap()[outputPipe[0]] = this;
+    server.getEpoll().addRead(outputPipe[0]);
   }
-
-  server.getCgiMap()[outputPipe[0]] = this;
-  server.getEpoll().addRead(outputPipe[0]);
 
   childPid = fork();
   if (childPid < 0) {
@@ -48,7 +48,14 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
       exit(127); // TODO: how to handle this?
     std::string scriptName = path.substr(path.find_last_of('/') + 1);
 
-    // set io
+    // set input
+    if (req.getMethod() == "POST") {
+      close(bodyPipe[1]);
+      dup2(bodyPipe[0], 0);
+      close(bodyPipe[0]);
+    }
+
+    // set output
     close(outputPipe[0]);
     dup2(outputPipe[1], 1);
     close(outputPipe[1]);
@@ -58,6 +65,8 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     std::cerr << "execve: " << strerror(errno) << std::endl;
     exit(127);
   }
+  if (req.getMethod() == "POST")
+    close(bodyPipe[0]);
   close(outputPipe[1]);
 }
 
@@ -65,17 +74,36 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
 void Cgi::readingOutput() {
   char buf[BUF_SIZE + 1];
 
-  int bytesRead = read(outputPipe[0], buf, BUF_SIZE);
+  int bytesRead = ::read(outputPipe[0], buf, BUF_SIZE);
+  if (bytesRead < 0) {
+    throw std::runtime_error(__FUNCTION__);
+  } else if (bytesRead == 0) {
+    state = COMPLETE;
+    server.getEpoll().remove(outputPipe[0]);
+    close(outputPipe[0]);
+  }
   buf[bytesRead] = '\0';
   output += buf;
-  state = COMPLETE;
-  server.getEpoll().remove(outputPipe[0]);
-  close(outputPipe[0]);
-
-  // if it is done, change cgiState to READING_OUTPUT
 }
 
-// TODO: working here
+void Cgi::sendingBody() {
+  int bytesWritten = ::write(bodyPipe[1], reqBody.c_str(), reqBody.size());
+  if (bytesWritten <= 0) {
+    throw std::runtime_error(__FUNCTION__);
+  }
+  reqBody.erase(0, bytesWritten);
+
+  // TODO: check leaks
+  if (reqBody.empty()) {
+    server.getEpoll().remove(bodyPipe[1]);
+    close(bodyPipe[1]);
+    cgiState = READING_OUTPUT;
+    server.getEpoll().addRead(outputPipe[0]);
+    server.getCgiMap().erase(bodyPipe[1]);
+    server.getCgiMap()[outputPipe[0]] = this;
+  }
+}
+
 void Cgi::handleEvent() {
   if (cgiState == SENDING_BODY) {
     sendingBody();

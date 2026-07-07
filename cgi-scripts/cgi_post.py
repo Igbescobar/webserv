@@ -1,9 +1,5 @@
 #!/usr/bin/python3
 
-# import time
-#
-# time.sleep(10)
-
 import os
 
 msg = "hello from python cgi\n"
@@ -26,3 +22,11 @@ print("Content-Type: text/plain")
 print(f"Content-Length: {len(msg) + 1}")
 print()
 print(msg)
+
+import sys
+
+body = sys.stdin.readline()
+
+print("===BODY===")
+print(repr(body))
+print("======")
