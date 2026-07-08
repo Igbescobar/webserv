@@ -34,11 +34,14 @@ private:
   t_cgiState cgiState;
   pid_t childPid;
   std::string reqBody;
+  std::string interpreter;
 
   std::vector<std::string> buildEnv();
   std::string extractQuery();
   void sendingBody();
   void readingOutput();
+  std::string extractExtension();
+  std::string getInterpreter(const std::string &ext);
 
 public:
   Cgi(Server &server, std::string path, HttpRequest &req);

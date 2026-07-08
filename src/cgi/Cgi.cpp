@@ -13,6 +13,11 @@
 Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     : server(server), path(path), _req(req), state(INCOMPLETE),
       reqBody(req.getBody()) {
+
+  std::cerr << "path: " << path << std::endl;
+  interpreter = getInterpreter(extractExtension());
+  std::cerr << "interpreter: " << interpreter << std::endl;
+
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
   if (req.getMethod() == "POST") {
@@ -31,8 +36,6 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
   if (childPid < 0) {
     throw std::runtime_error("fork: " + std::string(strerror(errno)));
   } else if (childPid == 0) {
-    // set argv
-    char *argv[] = {const_cast<char *>("sample"), NULL};
 
     // set envp
     std::vector<std::string> env = buildEnv();
@@ -48,6 +51,11 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
       exit(127); // TODO: how to handle this?
     std::string scriptName = path.substr(path.find_last_of('/') + 1);
 
+    // set argv
+    // char *argv[] = {const_cast<char *>("sample"), NULL};
+    char *argv[] = {const_cast<char *>(interpreter.c_str()),
+                    const_cast<char *>(scriptName.c_str()), NULL};
+
     // set input
     if (req.getMethod() == "POST") {
       close(bodyPipe[1]);
@@ -61,7 +69,9 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     close(outputPipe[1]);
 
     // run execve
-    execve(scriptName.c_str(), argv, envp.data());
+    // execve(scriptName.c_str(), argv, envp.data());
+    execve(argv[0], argv, envp.data());
+    // TODO: what to do if it fails?
     std::cerr << "execve: " << strerror(errno) << std::endl;
     exit(127);
   }
@@ -135,4 +145,26 @@ std::string Cgi::extractQuery() {
     return _req.getUri().substr(queryPos + 1);
   else
     return "";
+}
+
+std::string Cgi::extractExtension() {
+  size_t dotPos = path.find_last_of('.');
+  if (dotPos == std::string::npos) {
+    // TODO: better to just return error response
+    throw std::runtime_error("cgi script without extension");
+  }
+  return path.substr(dotPos);
+}
+
+std::string Cgi::getInterpreter(const std::string &ext) {
+  if (ext == ".py")
+    return "/usr/bin/python3";
+  if (ext == ".php")
+    return "/usr/bin/php-cgi";
+  if (ext == ".sh")
+    return "/bin/bash";
+  if (ext == ".bla")
+    return "/home/marcos/webserv/cgi_tester";
+  // TODO: better to just return an error response
+  return "";
 }
