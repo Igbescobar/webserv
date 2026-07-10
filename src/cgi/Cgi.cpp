@@ -167,17 +167,12 @@ std::vector<std::string> Cgi::buildEnv() {
   env.push_back("CONTENT_TYPE=" + _req.getHeader("content-type"));
   env.push_back("QUERY_STRING=" + extractQuery());
   env.push_back("SERVER_PROTOCOL=HTTP/1.1");
-  // PATH_INFO is a URL path (the request URI minus its query string), not
-  // the resolved filesystem path used to exec the script.
   env.push_back("PATH_INFO=" + extractPath());
   env.push_back("REQUEST_URI=" + _req.getUri());
   addHeaderEnvVars(env);
   return env;
 }
 
-// Forwards every request header as a CGI/1.1 HTTP_<NAME> variable (e.g.
-// "X-Secret-Header" becomes "HTTP_X_SECRET_HEADER"). Content-Length and
-// Content-Type are skipped since they already have dedicated variables.
 void Cgi::addHeaderEnvVars(std::vector<std::string> &env) {
   const std::map<std::string, std::string> &headers = _req.getHeaders();
 
