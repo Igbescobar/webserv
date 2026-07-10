@@ -14,8 +14,6 @@ class Server;
 class Client;
 class Cgi;
 
-typedef enum e_cgiState { SENDING_BODY, READING_OUTPUT } t_cgiState;
-
 // TODO: fds non-blocking! cloexec?
 //
 // TODO:
@@ -31,10 +29,10 @@ private:
   int outputPipe[2];
   int bodyPipe[2];
   t_state state;
-  t_cgiState cgiState;
   pid_t childPid;
   std::string reqBody;
   std::string interpreter;
+  std::string::size_type _bodyBytesSent;
 
   std::vector<std::string> buildEnv();
   std::string extractQuery();
@@ -46,7 +44,7 @@ private:
 public:
   Cgi(Server &server, std::string path, HttpRequest &req);
 
-  void handleEvent();
+  void handleEvent(int triggeredFd);
 
   std::string getOutput();
   t_state getState();

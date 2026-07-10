@@ -46,11 +46,24 @@ bool Client::read(int clientFd) {
 
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
   requestSize += bytesRead;
+  int percentage = requestSize / 1000000;
+  if (percentage % 10 == 0 && percentage != reference) {
+    reference = percentage;
+    std::cerr << percentage << "%" << std::endl;
+  }
   if (bytesRead <= 0 || requestSize > REQUEST_LIMIT)
     return false;
 
   buffer[bytesRead] = '\0';
   request.append(std::string(buffer, bytesRead));
+  tmpBody += buffer;
+
+  std::string::size_type pos = tmpBody.find("\r\n\r\n");
+  if (pos != std::string::npos && tmpFlag) {
+    std::cerr << "=== headers ===" << std::endl;
+    std::cerr << tmpBody.substr(0, pos) << std::endl;
+    tmpFlag = false;
+  }
 
   handleRequestState(request.getState());
   return true;
@@ -58,6 +71,7 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
+    printMap(request.getHeaders());
     CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
     if (target.isCgi) {
       cgi = new Cgi(server, target.scriptPath, request);
@@ -92,6 +106,8 @@ bool Client::write(int clientFd) {
       return true;
     responseStr = CgiResponder::handle(serverConfig, request, cgi->getOutput())
                       .getResponse();
+    // std::cerr << "=== responseStr ===" << std::endl << responseStr <<
+    // std::endl;
     delete cgi;
     cgi = NULL;
   }

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <vector>
 
 void setNonBlocking(int fd);
@@ -14,25 +15,31 @@ void deleteMapItem(std::map<K, V> &map, K key) {
   delete valueToDelete;
 }
 
-template <typename K, typename V> void printMap(std::map<K, V> &map) {
+template <typename K, typename V> void printMap(const std::map<K, V> &map) {
   typename std::map<K, V>::const_iterator it;
 
-  std::cout << "{" << std::endl;
+  std::cerr << "{" << std::endl;
   for (it = map.begin(); it != map.end(); ++it) {
-    std::cout << "    " << it->first << " = " << it->second << std::endl;
+    std::cerr << "    " << it->first << " = " << it->second << std::endl;
   }
-  std::cout << "}" << std::endl;
+  std::cerr << "}" << std::endl;
 }
 
 template <typename T> void printVector(const std::vector<T> &v) {
   typename std::vector<T>::const_iterator it;
 
-  std::cout << "[" << std::endl;
+  std::cerr << "[" << std::endl;
   for (it = v.begin(); it != v.end(); ++it) {
     if (*it == NULL)
-      std::cout << "    " << "NULL" << std::endl;
+      std::cerr << "    " << "NULL" << std::endl;
     else
-      std::cout << "    " << *it << std::endl;
+      std::cerr << "    " << *it << std::endl;
   }
-  std::cout << "]" << std::endl;
+  std::cerr << "]" << std::endl;
+}
+
+template <typename T> std::string toString(const T &value) {
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
 }
