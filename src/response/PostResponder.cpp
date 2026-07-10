@@ -47,11 +47,7 @@ HttpResponse PostResponder::handle(const ServerConfig &config,
 }
 
 bool PostResponder::isRequestValidForUpload(const HttpRequest &req) {
-  if (!FileResponder::isSafeUri(req.getUri()))
-    return false;
-  if (req.getBody().empty())
-    return false;
-  return true;
+  return FileResponder::isSafeUri(req.getUri());
 }
 
 bool PostResponder::isBodyTooLarge(const ServerConfig &config,
