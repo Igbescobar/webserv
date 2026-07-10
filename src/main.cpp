@@ -1,10 +1,12 @@
 #include "parser_config/ConfigParser.hpp"
 #include "server/Server.hpp"
+#include <csignal>
 #include <iostream>
 
 void logServerConfig(const ServerConfig &config, int serverIndex);
 
 int main(int argc, char **argv) {
+  signal(SIGPIPE, SIG_IGN);
   if (argc > 2) {
     std::cerr
         << "Error: Too many arguments. Usage: ./webserv [config_file_path]"

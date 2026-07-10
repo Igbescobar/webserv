@@ -25,6 +25,10 @@ private:
   time_t lastActivity;
   Server &server;
   Cgi *cgi;
+  int reference;
+  std::string tmpBody;
+  bool tmpFlag;
+  std::string::size_type bytesSent;
 
   bool read(int clientFd);
   bool write(int clientFd);

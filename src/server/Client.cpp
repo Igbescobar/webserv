@@ -17,13 +17,14 @@
 Client::Client(int clientSocket, Server &server,
                const ServerConfig &serverConfig)
     : clientFd(clientSocket), serverConfig(serverConfig), server(server),
-      cgi(NULL) {
+      cgi(NULL), bytesSent(0) {
   request = HttpRequest(serverConfig);
   setNonBlocking(clientSocket);
   setCloseOnExec(clientSocket);
   server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;
+  tmpFlag = true;
 }
 
 Client::~Client() {
@@ -112,14 +113,16 @@ bool Client::write(int clientFd) {
     cgi = NULL;
   }
 
-  int bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
+  int bytesWritten = ::write(clientFd, responseStr.c_str() + bytesSent,
+                             responseStr.size() - bytesSent);
+  bytesSent += bytesWritten;
   if (bytesWritten <= 0) {
     return false;
   }
 
-  responseStr.erase(0, bytesWritten);
+  // responseStr.erase(0, bytesWritten);
 
-  if (!responseStr.empty())
+  if (bytesSent == responseStr.size())
     return true;
 
   return false;
