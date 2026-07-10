@@ -35,7 +35,10 @@ private:
   std::string::size_type _bodyBytesSent;
 
   std::vector<std::string> buildEnv();
+  void addHeaderEnvVars(std::vector<std::string> &env);
+  std::string headerNameToEnvVar(const std::string &headerName);
   std::string extractQuery();
+  std::string extractPath();
   void sendingBody();
   void readingOutput();
   std::string extractExtension();

@@ -37,6 +37,7 @@ private:
   long getBodySizeLimit() const;
   void checkEarlyBodySizeLimit();
   void checkOngoingBodySizeLimit();
+  size_t decodedChunkedBodySize() const;
 
 public:
   HttpRequest();

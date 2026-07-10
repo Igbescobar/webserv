@@ -20,8 +20,11 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   state = other.state;
   errorCode = other.errorCode;
   method = other.method;
-  body = other.body;
+  uri = other.uri;
+  version = other.version;
   headers = other.headers;
+  body = other.body;
+  headerStart = other.headerStart;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
@@ -29,6 +32,12 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
+  uri = other.uri;
+  version = other.version;
+  headers = other.headers;
+  body = other.body;
+  headerStart = other.headerStart;
   return *this;
 }
 
@@ -306,13 +315,53 @@ void HttpRequest::checkOngoingBodySizeLimit() {
   if (limit > -1) {
     size_t bodyStart = buf.find(DELIMETER);
     if (bodyStart != std::string::npos) {
-      size_t currentBodySize = buf.size() - (bodyStart + 4);
+      size_t currentBodySize;
+      if (getHeader("transfer-encoding") == "chunked")
+        currentBodySize = decodedChunkedBodySize();
+      else
+        currentBodySize = buf.size() - (bodyStart + 4);
       if (currentBodySize > static_cast<size_t>(limit)) {
         errorCode = 413;
         state = ERROR;
       }
     }
   }
+}
+
+// Sums only the real content bytes of whatever chunks have arrived so far,
+// skipping the chunk-size lines and CRLF framing that parseChunkedBody()
+// would otherwise leave counted as if they were body content. A chunk
+// still being received counts for however many of its bytes have actually
+// arrived, so a client can't dodge the limit by trickling one huge chunk.
+size_t HttpRequest::decodedChunkedBodySize() const {
+  size_t bodyStart = buf.find(DELIMETER);
+  if (bodyStart == std::string::npos)
+    return 0;
+
+  size_t pos = bodyStart + 4;
+  size_t total = 0;
+
+  while (pos < buf.size()) {
+    size_t chunkSizeEnd = buf.find("\r\n", pos);
+    if (chunkSizeEnd == std::string::npos)
+      break; // chunk-size line not fully received yet
+
+    char *endptr;
+    size_t chunkSize =
+        std::strtoul(buf.substr(pos, chunkSizeEnd - pos).c_str(), &endptr, 16);
+    if (*endptr != '\0' || chunkSize == 0)
+      break; // malformed, or the terminating zero-size chunk
+
+    size_t dataStart = chunkSizeEnd + 2;
+    size_t available = buf.size() - dataStart;
+    if (available < chunkSize) {
+      total += available;
+      break;
+    }
+    total += chunkSize;
+    pos = dataStart + chunkSize + 2;
+  }
+  return total;
 }
 
 void HttpRequest::print() const {

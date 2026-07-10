@@ -2,6 +2,8 @@
 #include "request/HttpRequest.hpp"
 #include "server/Client.hpp"
 #include "utils.hpp"
+#include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -111,8 +113,10 @@ void Cgi::sendingBody() {
   // int bytesWritten = ::write(bodyPipe[1], reqBody.c_str(), 100);
   // int bytesWritten = ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent,
   //                            reqBody.size() - _bodyBytesSent);
-  int bytesWritten = ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent,
-                             reqBody.size() - _bodyBytesSent);
+  size_t remaining = reqBody.size() - _bodyBytesSent;
+  size_t chunkSize = remaining < 10000 ? remaining : 10000;
+  int bytesWritten =
+      ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent, chunkSize);
   // std::cerr << "after write" << std::endl;
   if (bytesWritten <= 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -154,7 +158,6 @@ std::string Cgi::getOutput() { return output; }
 
 t_state Cgi::getState() { return state; }
 
-// TODO: missing variables
 std::vector<std::string> Cgi::buildEnv() {
   std::vector<std::string> env;
   env.push_back("REQUEST_METHOD=" + _req.getMethod());
@@ -163,18 +166,52 @@ std::vector<std::string> Cgi::buildEnv() {
   // env.push_back("CONTENT_LENGTH=" + _req.getHeader("content-length"));
   env.push_back("CONTENT_TYPE=" + _req.getHeader("content-type"));
   env.push_back("QUERY_STRING=" + extractQuery());
-  // if (_req.getMethod() == "POST") {
   env.push_back("SERVER_PROTOCOL=HTTP/1.1");
-  env.push_back("PATH_INFO=/");
-  // }
-  if (!_req.getHeader("x-secret-header-for-test").empty()) {
-    std::cerr << "yay!" << std::endl;
-    env.push_back("HTTP_X_SECRET_HEADER_FOR_TEST=1");
-  } else {
-    std::cerr << "what!?" << std::endl;
-  }
+  // PATH_INFO is a URL path (the request URI minus its query string), not
+  // the resolved filesystem path used to exec the script.
+  env.push_back("PATH_INFO=" + extractPath());
+  env.push_back("REQUEST_URI=" + _req.getUri());
+  addHeaderEnvVars(env);
   return env;
 }
+
+// Forwards every request header as a CGI/1.1 HTTP_<NAME> variable (e.g.
+// "X-Secret-Header" becomes "HTTP_X_SECRET_HEADER"). Content-Length and
+// Content-Type are skipped since they already have dedicated variables.
+void Cgi::addHeaderEnvVars(std::vector<std::string> &env) {
+  const std::map<std::string, std::string> &headers = _req.getHeaders();
+
+  for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+       it != headers.end(); ++it) {
+    if (it->first == "content-length" || it->first == "content-type")
+      continue;
+    env.push_back(headerNameToEnvVar(it->first) + "=" + it->second);
+  }
+}
+
+std::string Cgi::headerNameToEnvVar(const std::string &headerName) {
+  std::string envVar = headerName;
+
+  std::replace(envVar.begin(), envVar.end(), '-', '_');
+  std::transform(envVar.begin(), envVar.end(), envVar.begin(), ::toupper);
+  return "HTTP_" + envVar;
+}
+// std::vector<std::string> Cgi::buildEnv() {
+//   size_t queryPos = _req.getUri().find('?');
+//   std::string pathInfo = (queryPos != std::string::npos)
+//                              ? _req.getUri().substr(0, queryPos)
+//                              : _req.getUri();
+//
+//   std::vector<std::string> env;
+//   env.push_back("REQUEST_METHOD=" + _req.getMethod());
+//   env.push_back("CONTENT_LENGTH=" + _req.getHeader("content-length"));
+//   env.push_back("CONTENT_TYPE=" + _req.getHeader("content-type"));
+//   env.push_back("QUERY_STRING=" + extractQuery());
+//   env.push_back("SERVER_PROTOCOL=HTTP/1.0");
+//   env.push_back("REQUEST_URI=" + _req.getUri());
+//   env.push_back("PATH_INFO=" + pathInfo);
+//   return env;
+// }
 
 std::string Cgi::extractQuery() {
   size_t queryPos = _req.getUri().find('?');
@@ -183,6 +220,15 @@ std::string Cgi::extractQuery() {
     return _req.getUri().substr(queryPos + 1);
   else
     return "";
+}
+
+std::string Cgi::extractPath() {
+  size_t queryPos = _req.getUri().find('?');
+
+  if (queryPos != std::string::npos)
+    return _req.getUri().substr(0, queryPos);
+  else
+    return _req.getUri();
 }
 
 std::string Cgi::extractExtension() {
