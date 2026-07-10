@@ -21,6 +21,7 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   errorCode = other.errorCode;
   method = other.method;
   body = other.body;
+  headers = other.headers;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {

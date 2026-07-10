@@ -18,6 +18,7 @@ Client::Client(int clientSocket, Server &server,
                const ServerConfig &serverConfig)
     : clientFd(clientSocket), serverConfig(serverConfig), server(server),
       cgi(NULL), bytesSent(0) {
+  std::cerr << "Client constructor called" << std::endl;
   request = HttpRequest(serverConfig);
   setNonBlocking(clientSocket);
   setCloseOnExec(clientSocket);

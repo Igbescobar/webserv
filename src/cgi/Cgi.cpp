@@ -22,10 +22,9 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
   if (pipe(bodyPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
-  // std::cerr << "outputPipe: " << outputPipe[0] << " " << outputPipe[1]
-  //           << std::endl;
-  // std::cerr << "bodyPipe: " << bodyPipe[0] << " " << bodyPipe[1] <<
-  // std::endl;
+  std::cerr << "outputPipe: " << outputPipe[0] << " " << outputPipe[1]
+            << std::endl;
+  std::cerr << "bodyPipe: " << bodyPipe[0] << " " << bodyPipe[1] << std::endl;
   setNonBlocking(outputPipe[0]);
   setNonBlocking(outputPipe[1]);
   setNonBlocking(bodyPipe[0]);
@@ -112,16 +111,20 @@ void Cgi::sendingBody() {
   // int bytesWritten = ::write(bodyPipe[1], reqBody.c_str(), 100);
   // int bytesWritten = ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent,
   //                            reqBody.size() - _bodyBytesSent);
-  int bytesWritten =
-      ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent, 10000);
+  int bytesWritten = ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent,
+                             reqBody.size() - _bodyBytesSent);
   // std::cerr << "after write" << std::endl;
   if (bytesWritten <= 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK)
       return;
-    std::cerr << "write: " << strerror(errno) << std::endl;
-    throw std::runtime_error("write: " + std::string(strerror(errno)));
+    std::cerr << "write to " << bodyPipe[1] << ": " << strerror(errno)
+              << std::endl;
+    // throw std::runtime_error("write: " + std::string(strerror(errno)));
+  } else {
+    _bodyBytesSent += bytesWritten;
   }
-  _bodyBytesSent += bytesWritten;
+  // std::cerr << "_bodyBytesSent: " << _bodyBytesSent << std::endl;
+  // std::cerr << "reqBody.size(): " << reqBody.size() << std::endl;
   // std::cerr << "=== sent" << std::endl;
   // std::cerr << reqBody.substr(0, bytesWritten) << std::endl;
   // std::cerr << "===" << std::endl;
@@ -131,7 +134,6 @@ void Cgi::sendingBody() {
   // TODO: check leaks
   // if (reqBody.empty()) {
   if (_bodyBytesSent == reqBody.size()) {
-    std::cerr << "wth?" << std::endl;
     server.getEpoll().remove(bodyPipe[1]);
     close(bodyPipe[1]);
     server.getCgiMap().erase(bodyPipe[1]);
@@ -165,24 +167,14 @@ std::vector<std::string> Cgi::buildEnv() {
   env.push_back("SERVER_PROTOCOL=HTTP/1.1");
   env.push_back("PATH_INFO=/");
   // }
+  if (!_req.getHeader("x-secret-header-for-test").empty()) {
+    std::cerr << "yay!" << std::endl;
+    env.push_back("HTTP_X_SECRET_HEADER_FOR_TEST=1");
+  } else {
+    std::cerr << "what!?" << std::endl;
+  }
   return env;
 }
-// std::vector<std::string> Cgi::buildEnv() {
-//   size_t queryPos = _req.getUri().find('?');
-//   std::string pathInfo = (queryPos != std::string::npos)
-//                              ? _req.getUri().substr(0, queryPos)
-//                              : _req.getUri();
-//
-//   std::vector<std::string> env;
-//   env.push_back("REQUEST_METHOD=" + _req.getMethod());
-//   env.push_back("CONTENT_LENGTH=" + _req.getHeader("content-length"));
-//   env.push_back("CONTENT_TYPE=" + _req.getHeader("content-type"));
-//   env.push_back("QUERY_STRING=" + extractQuery());
-//   env.push_back("SERVER_PROTOCOL=HTTP/1.0");
-//   env.push_back("REQUEST_URI=" + _req.getUri());
-//   env.push_back("PATH_INFO=" + pathInfo);
-//   return env;
-// }
 
 std::string Cgi::extractQuery() {
   size_t queryPos = _req.getUri().find('?');
