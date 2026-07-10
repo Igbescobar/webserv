@@ -209,8 +209,12 @@ std::string Cgi::getInterpreter(const std::string &ext) {
     return "/usr/bin/php-cgi";
   if (ext == ".sh")
     return "/bin/bash";
-  if (ext == ".bla")
-    return "/home/marcos/webserv/cgi_tester";
+  if (ext == ".bla") {
+    char cwd[4096];
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+      throw std::runtime_error("getcwd: " + std::string(strerror(errno)));
+    return std::string(cwd) + "/cgi_tester";
+  }
   // TODO: better to just return an error response
   return "";
 }
