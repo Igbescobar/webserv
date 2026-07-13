@@ -43,4 +43,5 @@ public:
   static void sigintHandler(int signum);
   Epoll &getEpoll();
   std::map<int, Cgi *> &getCgiMap();
+  void printCgiMap();
 };

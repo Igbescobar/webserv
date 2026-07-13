@@ -79,19 +79,30 @@ void Server::handleEvents(int n) {
 }
 
 void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
+  /*std::cout<<"---------------\n";
+  epoll.printRegistered();
+  std::cout<<"---------------\n";*/
   if (clientMap.find(triggeredFd) != clientMap.end()) {
     if (clientMap[triggeredFd]->handleEvent(eventsMask) == false) {
       epoll.remove(triggeredFd);
       deleteMapItem<std::map<int, Client *> >(clientMap, triggeredFd);
     }
   } else if (cgiMap.find(triggeredFd) != cgiMap.end()) {
+    std::cout<<"CGI esta en CGi Map\n"
     Cgi *cgi = cgiMap[triggeredFd];
-    if (cgi->handleEvent()) {
+    if (cgi->handleEvent(triggeredFd)) {
       int targetFd = cgi->getClientFd();
       if (clientMap.count(targetFd)) {
         std::string output = cgi->getOutput();
         if (cgi->getState() == ERROR || output.empty())
-          clientMap[targetFd]->sendError(500);
+	{
+	  //TODO: DELETE COMMENT
+          if(output.empty())
+		  std::cout<<"output of cgi is empty\n";
+	  std::cout<<"Error borns here\n";
+	  //std::cout<<"OUTPUT OF CGI: "<<output<<"\n";
+          //clientMap[targetFd]->sendError(500);
+	}
         else {
           clientMap[targetFd]->setResponse(
               CgiResponder::handle(clientMap[targetFd]->getServerConfig(),
@@ -100,10 +111,11 @@ void Server::handleSingleEvent(int triggeredFd, uint32_t eventsMask) {
           epoll.modWrite(targetFd);
         }
       }
-      epoll.remove(triggeredFd);
-      close(triggeredFd);
-      cgiMap.erase(triggeredFd);
-      delete cgi;
+      //First check if this is necessary because cgi continues
+      //epoll.remove(triggeredFd);
+      //close(triggeredFd);
+      //cgiMap.erase(triggeredFd);
+      //delete cgi;
     }
   } else {
     handleServer(triggeredFd);
@@ -169,3 +181,10 @@ void Server::sweepTimeouts() {
 Epoll &Server::getEpoll() { return epoll; }
 
 std::map<int, Cgi *> &Server::getCgiMap() { return cgiMap; }
+
+void	Server::printCgiMap()
+{
+	for (std::map<int, Cgi *>::const_iterator it = cgiMap.begin(); it != cgiMap.end(); ++it) {
+        std::cout << it->first << "\n";
+    }
+}

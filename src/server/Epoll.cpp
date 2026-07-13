@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <cstdio>
+#include <cstdlib>
 
 Epoll::Epoll() {
   epollFd = epoll_create(1);
@@ -38,7 +40,30 @@ void Epoll::addRead(int fd) {
   ev.data.fd = fd;
 
   if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) < 0)
+  {
+      int real_errno = errno;
+      perror("\n[KERNEL PANIC] epoll_ctl falló");
+      printf("Detalles crudos -> epollFd: %d | target fd: %d | errno real: %d\n\n", epollFd, fd, real_errno);
+      exit(EXIT_FAILURE); // <-- Y morirá AQUI, después de imprimir la verdad
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  }
+  registeredFds.insert(fd);
+}
+
+void Epoll::addWrite(int fd) {
+  struct epoll_event ev;
+
+  std::memset(&ev, 0, sizeof(ev));
+  ev.events = EPOLLOUT;
+  ev.data.fd = fd;
+  if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) < 0)
+  {
+    int real_errno = errno;
+      perror("\n[KERNEL PANIC] epoll_ctl falló");
+      printf("Detalles crudos -> epollFd: %d | target fd: %d | errno real: %d\n\n", epollFd, fd, real_errno);
+      exit(EXIT_FAILURE); // <-- Y morirá AQUI, después de imprimir la verdad
+    throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  }
   registeredFds.insert(fd);
 }
 
@@ -50,12 +75,24 @@ void Epoll::modWrite(int fd) {
   ev.data.fd = fd;
 
   if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) < 0)
+  {
+    int real_errno = errno;
+      perror("\n[KERNEL PANIC] epoll_ctl falló");
+      printf("Detalles crudos -> epollFd: %d | target fd: %d | errno real: %d\n\n", epollFd, fd, real_errno);
+      exit(EXIT_FAILURE); // <-- Y morirá AQUI, después de imprimir la verdad
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  }
 }
 
 void Epoll::remove(int fd) {
   if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL) < 0)
+  {
+    int real_errno = errno;
+      perror("\n[KERNEL PANIC] epoll_ctl falló");
+      printf("Detalles crudos -> epollFd: %d | target fd: %d | errno real: %d\n\n", epollFd, fd, real_errno);
+      exit(EXIT_FAILURE); // <-- Y morirá AQUI, después de imprimir la verdad
     throw std::runtime_error("epoll_ctl: " + std::string(strerror(errno)));
+  }
   registeredFds.erase(fd);
 }
 
@@ -69,10 +106,10 @@ int Epoll::wait() {
   return numEvents;
 }
 
-/*void Epoll::printRegistered() const {
+void Epoll::printRegistered() const {
     std::cerr << "[EPOLL] registered fds: ";
     for (std::set<int>::const_iterator it = registeredFds.begin();
          it != registeredFds.end(); ++it)
         std::cerr << *it << " ";
     std::cerr << "\n";
-}*/
+}

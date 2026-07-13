@@ -44,48 +44,63 @@ bool Client::read(int clientFd) {
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
   requestSize += bytesRead;
   if (bytesRead <= 0 || requestSize > REQUEST_LIMIT)
+  {
+    std::cerr << "[READ] closing: bytesRead=" << bytesRead << " errno=" << errno << "\n";
     return false;
-
+  }
+  if (requestSize > REQUEST_LIMIT) {
+        std::cerr << "[READ] closing: REQUEST_LIMIT exceeded size=" << requestSize << "\n";
+        return false;
+  }
   buffer[bytesRead] = '\0';
   request.append(std::string(buffer, bytesRead));
-
   handleRequestState(request.getState());
   return true;
 }
 
 void Client::handleRequestState(t_state state) {
+  CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
   if (state == COMPLETE) {
-    CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
-    if (target.isCgi) {
-      cgi = new Cgi(request, *target.location, clientFd);
-      cgi->execute(server);
-      if (cgi->getState() == ERROR) {
-        responseStr = ErrorResponseBuilder::build(serverConfig, request,
-                                                  cgi->getErrorCode())
-                          .getResponse();
-        delete cgi;
-        cgi = NULL;
-        server.getEpoll().modWrite(clientFd);
-      }
-    } else {
+      std::cout<<"request body: \n"<<request.getBody()<<"\n";
       responseStr =
           ResponseHandler(serverConfig, request).handle().getResponse();
       server.getEpoll().modWrite(clientFd);
-    }
   } else if (state == ERROR) {
     responseStr = ResponseHandler(serverConfig, request).handle().getResponse();
     server.getEpoll().modWrite(clientFd);
   } else if (state == INCOMPLETE)
+  {
+    if (target.isCgi) {
+      if(!cgi)
+      {
+        std::cout<<"AQUI YA DETECTA QUE ES CGI\n";
+        cgi = new Cgi(request, *target.location, clientFd);
+        if (cgi->getState() == ERROR) {
+          responseStr = ErrorResponseBuilder::build(serverConfig, request,
+                                                  cgi->getErrorCode())
+                          .getResponse();
+          delete cgi;
+          cgi = NULL;
+          server.getEpoll().modWrite(clientFd);
+        }
+      }
+      if(cgi->getState() == COMPLETE)
+      {
+         std::cout<<"CGI EXECUTES\n";
+         cgi->execute(server);
+      }
+    }
+    //std::cerr << "[READ] request complete, request body =\n" <<request.getRequest();
     return;
+  }
   else
     throw std::runtime_error("unknown request state");
 }
 
 bool Client::write(int clientFd) {
   int bytesWritten = ::write(clientFd, responseStr.c_str(), responseStr.size());
-  if (bytesWritten <= 0) {
+  if (bytesWritten <= 0)
     return false;
-  }
 
   responseStr.erase(0, bytesWritten);
 

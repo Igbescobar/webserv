@@ -20,23 +20,54 @@ std::string Cgi::getInterpreter(const std::string &ext) {
     return "/usr/bin/php-cgi";
   if (ext == ".sh")
     return "/bin/bash";
+  if(ext == ".bla")
+    return "./cgi_tester";
   return "";
 }
 
-bool Cgi::handleEvent() {
-  char buf[BUF_SIZE];
-  int bytes = ::read(pipeFd, buf, BUF_SIZE);
-  if (bytes > 0) {
-    output += std::string(buf, bytes);
-    return false;
-  }
-  if (bytes == 0) {
-    waitpid(pid, NULL, WNOHANG);
-    state = COMPLETE;
-    return true;
-  }
-  state = ERROR;
-  return true;
+e_cgi_event  Cgi::handleEvent(int fd) {
+    std::cout<<"Entrada en handleEvent\n";
+    if (fd == stdinPipeFd)
+        return writeBody();
+    std::cout<<"Lectuta handleEvent: \n";
+    return readOutput();
+}
+
+e_cgi_event Cgi::writeBody() {
+    size_t remaining = body.size() - bodyWritten;
+    if (remaining == 0) {
+        stdinPipeFd = -1;
+        return CGI_STDIN_DONE;
+    }
+    ssize_t written = ::write(stdinPipeFd, 
+                               body.c_str() + bodyWritten, 
+                               std::min(remaining, (size_t)BUF_SIZE));
+    std::cerr << "[STDIN WRITE] body size=" << body.size()
+          << " written=" << written;
+    if (written > 0)
+        bodyWritten += written;
+    if (bodyWritten >= body.size()) {
+        stdinPipeFd = -1;
+	return CGI_STDIN_DONE;
+    }
+    return CGI_CONTINUE;
+}
+
+e_cgi_event Cgi::readOutput() {
+    char buf[BUF_SIZE];
+    int bytes = ::read(pipeFd, buf, BUF_SIZE);
+    if (bytes > 0) {
+	std::cout<<"acumulacion de output en cgi\n";
+        output += std::string(buf, bytes);
+        return CGI_CONTINUE;
+    }
+    if (bytes == 0) {
+        waitpid(pid, NULL, WNOHANG);
+        state = COMPLETE;
+        return CGI_COMPLETE;
+    }
+    state = ERROR;
+    return CGI_ERROR;
 }
 
 std::string Cgi::extractScriptPath() {
@@ -51,7 +82,6 @@ std::string Cgi::extractScriptPath() {
           ? request.getUri().substr(filePosition, queryPos - filePosition)
           : request.getUri().substr(filePosition);
   fileName.erase(0, 1);
-  std::cout<<"ROOOOOOOOOOOOOOOOOOOOOOOOOOOT :"<<fileName;
   return location.getRoot() + fileName;
 }
 
@@ -89,8 +119,10 @@ void Cgi::setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
   dup2(stdinpipe[0], STDIN_FILENO);
   dup2(stdoutpipe[1], STDOUT_FILENO);
   close(stdinpipe[1]);
+  close(stdinpipe[0]);
   close(stdoutpipe[0]);
-  execve(interpreter.c_str(), argv, envp);
+  close(stdoutpipe[1]);
+  execve(argv[0], argv, envp);
   exit(1);
 }
 
@@ -100,7 +132,7 @@ void Cgi::execute(Server &server) {
   scriptPath = extractScriptPath();
   interpreter = getInterpreter(extractExtension());
   query = extractQuery();
-
+  std::cout<<"Script path: "<<scriptPath<<"\n";
   if (access(scriptPath.c_str(), F_OK) != 0) {
     state = ERROR;
     errorCode = 404;
@@ -112,8 +144,15 @@ void Cgi::execute(Server &server) {
     return;
   }
 
-  char *argv[] = {const_cast<char *>(interpreter.c_str()),
-                  const_cast<char *>(scriptPath.c_str()), NULL};
+  std::cout<<"Interpreter"<<interpreter<<"\n";
+    std::vector<char *> argv;
+  if (interpreter == "./cgi_tester") {
+    argv.push_back(const_cast<char *>(interpreter.c_str()));
+  } else {
+    argv.push_back(const_cast<char *>(interpreter.c_str()));
+    argv.push_back(const_cast<char *>(scriptPath.c_str()));
+  }
+  argv.push_back(NULL);
 
   std::vector<std::string> env = buildEnv();
 
@@ -136,17 +175,26 @@ void Cgi::execute(Server &server) {
   if (pid < 0)
     return;
   if (pid == 0)
-    setupChild(stdinpipe, stdoutpipe, argv, envp.data());
+    setupChild(stdinpipe, stdoutpipe, argv.data(), envp.data());
   else {
     close(stdinpipe[0]);
     close(stdoutpipe[1]);
-    std::string body = request.getBody();
-    write(stdinpipe[1], body.c_str(), body.size());
-    close(stdinpipe[1]);
+    this->body = request.getBody();
+    this->bodyWritten = 0;
+    this->stdinPipeFd = stdinpipe[1];
     this->pipeFd = stdoutpipe[0];
-    fcntl(stdoutpipe[0], F_SETFL, O_NONBLOCK);
+    setNonBlocking(stdinpipe[1]);
+    setNonBlocking(stdoutpipe[0]);
+    server.getCgiMap()[stdinpipe[1]] = this;
     server.getCgiMap()[stdoutpipe[0]] = this;
+    std::cout<<"-----cgiMap--------\n";
+    server.printCgiMap();
+    std::cout<<"-------------------\n";
+    std::cout<<"fd que va a entrar a epoll: "<<stdinpipe[1]<<"\n";
+    std::cout<<"fd que va a entrar a epoll: "<<stdoutpipe[0]<<"\n";
+    server.getEpoll().printRegistered();
     server.getEpoll().addRead(stdoutpipe[0]);
+    server.getEpoll().addWrite(stdinpipe[1]);
   }
   return;
 }

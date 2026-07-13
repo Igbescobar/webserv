@@ -20,6 +20,8 @@ private:
   std::map<std::string, std::string> headers;
   std::string body;
   size_t headerStart;
+  size_t chunkParsePos; // offset absoluto en buf, primera vez sin inicializar aún
+  bool chunkParsePosInit;
 
   void parseRequestLine();
   void parseRequestLineValues(const std::string &header);
