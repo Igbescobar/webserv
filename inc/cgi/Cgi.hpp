@@ -44,8 +44,12 @@ private:
   std::string extractExtension();
   std::string getInterpreter(const std::string &ext);
 
+  Cgi(const Cgi &other);
+  Cgi &operator=(const Cgi &other);
+
 public:
   Cgi(Server &server, std::string path, HttpRequest &req);
+  ~Cgi();
 
   void handleEvent(int triggeredFd);
 

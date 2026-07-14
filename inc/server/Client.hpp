@@ -7,8 +7,8 @@
 #include "server/Server.hpp"
 
 #define BUF_SIZE 4096
-#define IDLE_LIMIT 30
-#define ABSOLUTE_LIMIT 180
+#define IDLE_LIMIT 3000
+#define ABSOLUTE_LIMIT 18000
 #define REQUEST_LIMIT 200000000
 
 class Server;
@@ -25,9 +25,6 @@ private:
   time_t lastActivity;
   Server &server;
   Cgi *cgi;
-  int reference;
-  std::string tmpBody;
-  bool tmpFlag;
   std::string::size_type bytesSent;
 
   bool read(int clientFd);

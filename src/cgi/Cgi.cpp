@@ -5,11 +5,13 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
@@ -83,6 +85,7 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
   }
   if (req.getMethod() == "GET") {
     close(bodyPipe[1]);
+    bodyPipe[1] = -1;
   }
   close(bodyPipe[0]);
   close(outputPipe[1]);
@@ -98,7 +101,9 @@ void Cgi::readingOutput() {
   } else if (bytesRead == 0) {
     state = COMPLETE;
     server.getEpoll().remove(outputPipe[0]);
+    server.getCgiMap().erase(outputPipe[0]);
     close(outputPipe[0]);
+    outputPipe[0] = -1;
   }
   buf[bytesRead] = '\0';
   output += buf;
@@ -141,6 +146,26 @@ void Cgi::sendingBody() {
     server.getEpoll().remove(bodyPipe[1]);
     close(bodyPipe[1]);
     server.getCgiMap().erase(bodyPipe[1]);
+    bodyPipe[1] = -1;
+  }
+}
+
+Cgi::~Cgi() {
+  if (outputPipe[0] != -1) {
+    server.getEpoll().remove(outputPipe[0]);
+    server.getCgiMap().erase(outputPipe[0]);
+    close(outputPipe[0]);
+  }
+  if (bodyPipe[1] != -1) {
+    server.getEpoll().remove(bodyPipe[1]);
+    server.getCgiMap().erase(bodyPipe[1]);
+    close(bodyPipe[1]);
+  }
+
+  int status;
+  if (waitpid(childPid, &status, WNOHANG) == 0) {
+    kill(childPid, SIGKILL);
+    waitpid(childPid, &status, 0);
   }
 }
 

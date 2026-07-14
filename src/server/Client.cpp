@@ -18,17 +18,19 @@ Client::Client(int clientSocket, Server &server,
                const ServerConfig &serverConfig)
     : clientFd(clientSocket), serverConfig(serverConfig), server(server),
       cgi(NULL), bytesSent(0) {
-  std::cerr << "Client constructor called" << std::endl;
   request = HttpRequest(serverConfig);
   setNonBlocking(clientSocket);
   setCloseOnExec(clientSocket);
   server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;
-  tmpFlag = true;
 }
 
 Client::~Client() {
+  if (cgi) {
+    delete cgi;
+    cgi = NULL;
+  }
   server.getEpoll().remove(clientFd);
   close(clientFd);
 }
@@ -47,25 +49,14 @@ bool Client::read(int clientFd) {
   int bytesRead;
 
   bytesRead = ::read(clientFd, buffer, BUF_SIZE);
+  if (bytesRead <= 0)
+    return false;
   requestSize += bytesRead;
-  int percentage = requestSize / 1000000;
-  if (percentage % 10 == 0 && percentage != reference) {
-    reference = percentage;
-    std::cerr << percentage << "%" << std::endl;
-  }
-  if (bytesRead <= 0 || requestSize > REQUEST_LIMIT)
+  if (requestSize > REQUEST_LIMIT)
     return false;
 
   buffer[bytesRead] = '\0';
   request.append(std::string(buffer, bytesRead));
-  tmpBody += buffer;
-
-  std::string::size_type pos = tmpBody.find("\r\n\r\n");
-  if (pos != std::string::npos && tmpFlag) {
-    std::cerr << "=== headers ===" << std::endl;
-    std::cerr << tmpBody.substr(0, pos) << std::endl;
-    tmpFlag = false;
-  }
 
   handleRequestState(request.getState());
   return true;
@@ -73,7 +64,6 @@ bool Client::read(int clientFd) {
 
 void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
-    printMap(request.getHeaders());
     CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
     if (target.isCgi) {
       cgi = new Cgi(server, target.scriptPath, request);

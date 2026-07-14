@@ -10,6 +10,7 @@ HttpRequest::HttpRequest(ServerConfig serverConfig)
     : serverConfig(serverConfig), method("GET"), uri("/") {
   errorCode = -1;
   state = INCOMPLETE;
+  chunkedBodySearchPos = 0;
 }
 
 HttpRequest::~HttpRequest() {}
@@ -25,6 +26,7 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   headers = other.headers;
   body = other.body;
   headerStart = other.headerStart;
+  chunkedBodySearchPos = other.chunkedBodySearchPos;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
@@ -38,6 +40,7 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   headers = other.headers;
   body = other.body;
   headerStart = other.headerStart;
+  chunkedBodySearchPos = other.chunkedBodySearchPos;
   return *this;
 }
 
@@ -246,7 +249,14 @@ void HttpRequest::parseBody() {
 
 bool HttpRequest::isBodyComplete() {
   if (getHeader("transfer-encoding") == "chunked") {
-    return buf.find("0\r\n\r\n") != std::string::npos;
+    const std::string terminator = "0\r\n\r\n";
+    size_t searchFrom = chunkedBodySearchPos > terminator.size() - 1
+                             ? chunkedBodySearchPos - (terminator.size() - 1)
+                             : 0;
+    if (buf.find(terminator, searchFrom) != std::string::npos)
+      return true;
+    chunkedBodySearchPos = buf.size();
+    return false;
   }
   if (!getHeader("content-length").empty()) {
     size_t bodyStart = buf.find(DELIMETER) + 4;
