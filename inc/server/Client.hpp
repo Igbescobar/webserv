@@ -26,6 +26,7 @@ private:
   Server &server;
   Cgi *cgi;
   std::string::size_type bytesSent;
+  int reference;
 
   bool read(int clientFd);
   bool write(int clientFd);

@@ -24,6 +24,7 @@ Client::Client(int clientSocket, Server &server,
   server.getEpoll().addRead(clientSocket);
   connectionStart = lastActivity = std::time(NULL);
   requestSize = 0;
+  reference = 0;
 }
 
 Client::~Client() {
@@ -52,6 +53,11 @@ bool Client::read(int clientFd) {
   if (bytesRead <= 0)
     return false;
   requestSize += bytesRead;
+  int percentage = requestSize / 1000000;
+  if (percentage % 10 == 0 && percentage != reference) {
+    reference = percentage;
+    std::cerr << percentage << "%" << std::endl;
+  }
   if (requestSize > REQUEST_LIMIT)
     return false;
 
