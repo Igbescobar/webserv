@@ -124,11 +124,7 @@ void Cgi::sendingBody() {
       ::write(bodyPipe[1], reqBody.c_str() + _bodyBytesSent, chunkSize);
   // std::cerr << "after write" << std::endl;
   if (bytesWritten <= 0) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK)
-      return;
-    std::cerr << "write to " << bodyPipe[1] << ": " << strerror(errno)
-              << std::endl;
-    // throw std::runtime_error("write: " + std::string(strerror(errno)));
+    throw std::runtime_error("write: " + std::string(strerror(errno)));
   } else {
     _bodyBytesSent += bytesWritten;
   }
