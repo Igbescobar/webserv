@@ -4,6 +4,8 @@
 * check comments
     * check TODOs
 * README.md
+* free resources in Cgi constructor before throwing error
+* go over evaluation sheet testing everything
 
 # tests
 
