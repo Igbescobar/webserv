@@ -97,6 +97,6 @@ std::string ErrorResponseBuilder::defaultErrorHtml(int statusCode,
        << "</title></head>"
        << "<body><center><h1>" << statusCode << " " << message
        << "</h1></center>"
-       << "<hr><center>webserv</center></body></html>";
+       << "<hr><center>webserv</center></body></html>\n";
   return body.str();
 }
