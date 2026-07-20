@@ -11,6 +11,8 @@
 #define ABSOLUTE_LIMIT 18000
 #define REQUEST_LIMIT 200000000
 
+#define INTERNAL_SERVER_ERROR 500
+
 class Server;
 class Cgi;
 

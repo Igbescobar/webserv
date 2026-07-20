@@ -72,16 +72,14 @@ void Client::handleRequestState(t_state state) {
   if (state == COMPLETE) {
     CgiTarget target = CgiTargetResolver::resolve(serverConfig, request);
     if (target.isCgi) {
-      cgi = new Cgi(server, target.scriptPath, request);
-      // TODO: check this
-      // if (cgi->getState() == ERROR) {
-      //   responseStr = ErrorResponseBuilder::build(serverConfig, request,
-      //                                             cgi->getErrorCode())
-      //                     .getResponse();
-      // delete cgi;
-      // cgi = NULL;
-      // server.getEpoll().modWrite(clientFd);
-      // }
+      try {
+        cgi = new Cgi(server, target.scriptPath, request);
+      } catch (...) {
+        responseStr = ErrorResponseBuilder::build(serverConfig, request,
+                                                  INTERNAL_SERVER_ERROR)
+                          .getResponse();
+        cgi = NULL;
+      }
       server.getEpoll().modWrite(clientFd);
     } else {
       responseStr =
