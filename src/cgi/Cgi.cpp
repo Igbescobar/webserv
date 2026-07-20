@@ -18,17 +18,12 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     : server(server), path(path), _req(req), state(INCOMPLETE),
       reqBody(req.getBody()), _bodyBytesSent(0) {
 
-  std::cerr << "path: " << path << std::endl;
   interpreter = getInterpreter(extractExtension());
-  std::cerr << "interpreter: " << interpreter << std::endl;
 
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
   if (pipe(bodyPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
-  std::cerr << "outputPipe: " << outputPipe[0] << " " << outputPipe[1]
-            << std::endl;
-  std::cerr << "bodyPipe: " << bodyPipe[0] << " " << bodyPipe[1] << std::endl;
   setNonBlocking(outputPipe[0]);
   setNonBlocking(outputPipe[1]);
   setNonBlocking(bodyPipe[0]);
@@ -74,8 +69,6 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
     close(outputPipe[1]);
 
     // run execve
-    std::cerr << "envp: ";
-    printVector(envp);
     execve(argv[0], argv, envp.data());
     std::cerr << "execve: " << strerror(errno) << std::endl;
     exit(127);
