@@ -14,12 +14,6 @@ class Server;
 class Client;
 class Cgi;
 
-// TODO: fds non-blocking! cloexec?
-//
-// TODO:
-// kill process if it takes too long
-// use /usr/bin/python3, php, cgi-tester, etc
-// send body to cgi
 class Cgi {
 private:
   Server &server;

@@ -102,8 +102,6 @@ bool Client::write(int clientFd) {
       return true;
     responseStr = CgiResponder::handle(serverConfig, request, cgi->getOutput())
                       .getResponse();
-    // std::cerr << "=== responseStr ===" << std::endl << responseStr <<
-    // std::endl;
     delete cgi;
     cgi = NULL;
   }
@@ -114,8 +112,6 @@ bool Client::write(int clientFd) {
   if (bytesWritten <= 0) {
     return false;
   }
-
-  // responseStr.erase(0, bytesWritten);
 
   if (bytesSent == responseStr.size())
     return true;

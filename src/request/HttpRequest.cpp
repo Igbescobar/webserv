@@ -251,8 +251,8 @@ bool HttpRequest::isBodyComplete() {
   if (getHeader("transfer-encoding") == "chunked") {
     const std::string terminator = "0\r\n\r\n";
     size_t searchFrom = chunkedBodySearchPos > terminator.size() - 1
-                             ? chunkedBodySearchPos - (terminator.size() - 1)
-                             : 0;
+                            ? chunkedBodySearchPos - (terminator.size() - 1)
+                            : 0;
     if (buf.find(terminator, searchFrom) != std::string::npos)
       return true;
     chunkedBodySearchPos = buf.size();
@@ -375,23 +375,23 @@ size_t HttpRequest::decodedChunkedBodySize() const {
 }
 
 void HttpRequest::print() const {
-  // std::cout << "=== HttpRequest ===\n";
-  // std::cout << "State:      "
-  //           << (state == INCOMPLETE ? "INCOMPLETE"
-  //               : state == COMPLETE ? "COMPLETE"
-  //                                   : "ERROR")
-  //           << "\n";
-  // std::cout << "ErrorCode:  " << errorCode << "\n";
-  // std::cout << "Method:     " << method << "\n";
-  // std::cout << "URI:        " << uri << "\n";
-  // std::cout << "Version:    " << version << "\n";
-  // std::cout << "Headers:\n";
-  // for (std::map<std::string, std::string>::const_iterator it =
-  // headers.begin();
-  //      it != headers.end(); ++it)
-  //   std::cout << "  " << it->first << ": " << it->second << "\n";
-  // std::cout << "Body:       " << body << "\n";
-  // std::cout << "Buf size:   " << buf.size() << "\n";
+  return;
+  std::cout << "=== HttpRequest ===\n";
+  std::cout << "State:      "
+            << (state == INCOMPLETE ? "INCOMPLETE"
+                : state == COMPLETE ? "COMPLETE"
+                                    : "ERROR")
+            << "\n";
+  std::cout << "ErrorCode:  " << errorCode << "\n";
+  std::cout << "Method:     " << method << "\n";
+  std::cout << "URI:        " << uri << "\n";
+  std::cout << "Version:    " << version << "\n";
+  std::cout << "Headers:\n";
+  for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+       it != headers.end(); ++it)
+    std::cout << "  " << it->first << ": " << it->second << "\n";
+  std::cout << "Body:       " << body << "\n";
+  std::cout << "Buf size:   " << buf.size() << "\n";
 }
 
 const std::string &HttpRequest::getMethod() const { return this->method; }

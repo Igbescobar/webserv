@@ -23,11 +23,9 @@ int main(int argc, char **argv) {
     parser.validateServerConfigs();
 
     const std::vector<ServerConfig> &servers = parser.getServerConfigs();
-    // std::cout << "--- Found " << servers.size()
-    //           << " server configurations ---\n";
 
     for (size_t i = 0; i < servers.size(); ++i) {
-      // logServerConfig(servers[i], i);
+      logServerConfig(servers[i], i);
     }
 
     Server s(parser);
@@ -41,6 +39,7 @@ int main(int argc, char **argv) {
 }
 
 void logServerConfig(const ServerConfig &config, int serverIndex) {
+  return;
   std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
 
   const std::vector<std::string> &ips = config.getIPs();
