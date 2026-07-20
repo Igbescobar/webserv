@@ -12,3 +12,4 @@
     * track fds
     * track leaks
 * run 42 tester
+* read subject
