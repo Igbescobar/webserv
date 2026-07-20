@@ -22,8 +22,11 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
 
   if (pipe(outputPipe) < 0)
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
-  if (pipe(bodyPipe) < 0)
+  if (pipe(bodyPipe) < 0) {
+    close(outputPipe[0]);
+    close(outputPipe[1]);
     throw std::runtime_error("pipe: " + std::string(strerror(errno)));
+  }
   setNonBlocking(outputPipe[0]);
   setNonBlocking(outputPipe[1]);
   setNonBlocking(bodyPipe[0]);
@@ -37,6 +40,13 @@ Cgi::Cgi(Server &server, std::string path, HttpRequest &req)
 
   childPid = fork();
   if (childPid < 0) {
+    close(outputPipe[0]);
+    close(outputPipe[1]);
+    close(bodyPipe[0]);
+    close(bodyPipe[1]);
+    if (req.getMethod() == "POST")
+      server.getCgiMap().erase(bodyPipe[1]);
+    server.getCgiMap().erase(outputPipe[0]);
     throw std::runtime_error("fork: " + std::string(strerror(errno)));
   } else if (childPid == 0) {
 
