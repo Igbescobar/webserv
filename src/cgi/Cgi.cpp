@@ -107,13 +107,10 @@ void Cgi::readingOutput() {
   buf[bytesRead] = '\0';
   output += buf;
   if (state == COMPLETE) {
-    std::cerr << "after if" << std::endl;
     int status;
     waitpid(childPid, &status, WNOHANG);
-    std::cerr << "after waitpid" << std::endl;
     if (status != 0) {
       output = "cgi execution failed";
-      std::cerr << "error set" << std::endl;
     }
   }
 }
