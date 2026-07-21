@@ -1,5 +1,5 @@
 # webserv
-
+## Description
 A high-performance HTTP/1.1 web server written in C++98, implementing non-blocking I/O with the Linux `epoll` API. Built as part of the 42 curriculum by igngonza, marcolop, and fdurban-.
 
 The server handles multiple concurrent connections through an event-driven, reactor-pattern architecture, aiming for production-like robustness within the constraints of the curriculum.
@@ -56,7 +56,7 @@ The server follows a reactor pattern built around `epoll` for event notification
 
 The HTTP parser transitions between `INCOMPLETE`, `COMPLETE`, and `ERROR` states as data arrives, so it can handle partial reads and slow clients without blocking the event loop.
 
-## Getting started
+## Instructions
 
 ### Build
 
