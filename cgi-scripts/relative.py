@@ -4,7 +4,7 @@ import sys
 # The HTTP header is mandatory for CGI scripts so the server knows how to handle the data
 print("Content-Type: text/plain\r\n")
 
-file_path = "test/test.txt"-
+file_path = "test/test.txt"
 
 try:
     with open(file_path, 'r') as file:
