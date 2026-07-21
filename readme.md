@@ -1,6 +1,7 @@
+This prokect has been created as part of the 42 curriculum by igngonza, marcolop, fdurban-.
 # webserv
 ## Description
-A high-performance HTTP/1.1 web server written in C++98, implementing non-blocking I/O with the Linux `epoll` API. Built as part of the 42 curriculum by igngonza, marcolop, and fdurban-.
+A high-performance HTTP/1.1 web server written in C++98, implementing non-blocking I/O with the Linux `epoll` API.
 
 The server handles multiple concurrent connections through an event-driven, reactor-pattern architecture, aiming for production-like robustness within the constraints of the curriculum.
 
