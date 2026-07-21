@@ -1,126 +1,125 @@
-#### This project has been created as part of the 42 curriculum by igngonza marcolop and fdurban-
+# webserv
 
-# Description
+A high-performance HTTP/1.1 web server written in C++98, implementing non-blocking I/O with the Linux `epoll` API. Built as part of the 42 curriculum by igngonza, marcolop, and fdurban-.
 
-#### webserv is a high-performance HTTP/1.1 web server written in C++ that implements non-blocking I/O using the Linux epoll API. The server is designed to handle multiple concurrent connections efficiently through an event-driven architecture, making it suitable for production-like environments while adhering to the constraints of the 42 curriculum.
+The server handles multiple concurrent connections through an event-driven, reactor-pattern architecture, aiming for production-like robustness within the constraints of the curriculum.
 
-#### The project implements a complete HTTP server with support for:
+## Features
 
-#### Non-blocking I/O: Uses epoll for efficient I/O multiplexing to monitor multiple file descriptors
-#### HTTP Request Parsing: State-machine-based parser that handles fragmented TCP packets and chunked transfer encoding HttpRequest.cpp:41-53
-#### Configuration Management: Flexible configuration file parser supporting multiple server blocks and location-based routing default.conf:1-57
-#### CGI Support: Executes CGI scripts for PHP and Python extensions default.conf:41-52
-#### Timeout Enforcement: Implements both idle and absolute connection timeouts to prevent resource exhaustion
+- **Non-blocking I/O** — `epoll`-based multiplexing to monitor multiple file descriptors without blocking
+- **HTTP request parsing** — state-machine parser that handles fragmented TCP packets and chunked transfer encoding
+- **Configuration management** — flexible config file parser supporting multiple server blocks and location-based routing
+- **CGI support** — executes CGI scripts for PHP and Python
+- **Timeout enforcement** — idle and absolute connection timeouts to prevent resource exhaustion
 
-## Architecture and components
+### HTTP methods and protocol support
 
-#### The following diagram illustrates how high-level architectural stages map to specific classes and methods within the codebase.
+- `GET`, `POST`, `DELETE`, `HEAD`
+- HTTP/0.9 compatibility mode
 
-# Instructions
+### Server configuration
 
-## Compilation
+- Multiple virtual servers across different IP/port combinations
+- Server-name-based virtual hosting
+- Per-location client body size limits
+- Custom error pages per status code
+- Directory listing (autoindex) toggle
 
-#### The project uses a standard C++ build process. Ensure you have a C++ compiler (g++ or clang++) and make installed.
+### Request handling
 
-# make
+- Chunked transfer encoding
+- `Content-Length` validation
+- `Host` header validation
+- Request timeout enforcement
 
-## Configuration
+### Response generation
 
-#### Before running the server, ensure you have a valid configuration file. A default configuration is provided at config/default.conf which demonstrates:
+- Dynamic responses based on configuration
+- Error page serving
+- File upload handling
+- CGI execution with proper environment variable setup
 
-#### Multiple server blocks listening on different ports
-#### Location-based routing with different access rules
-#### CGI script execution
-#### File upload handling
-#### Custom error pages default.conf:1-90
+## Architecture
 
-## Execution
+The server follows a reactor pattern built around `epoll` for event notification.
 
-#### Run the server with the configuration file:
+| Component | Responsibility |
+|---|---|
+| `Server` | Orchestrates the event loop and manages client connections |
+| `Epoll` | Wrapper around the Linux `epoll` API for I/O multiplexing |
+| `Socket` | Socket creation, binding, and listening |
+| `Client` | Per-connection state and I/O operations |
+| `HttpRequest` | State machine for parsing incoming HTTP requests |
+| `HttpResponse` | Builds HTTP responses from request + configuration |
 
-#### ./webserver config/default.conf
+### Parser state machine
 
-#### The server will start listening on the configured ports (default: 8080, 8081, 9000, 8000, 8070).
+The HTTP parser transitions between `INCOMPLETE`, `COMPLETE`, and `ERROR` states as data arrives, so it can handle partial reads and slow clients without blocking the event loop.
+
+## Getting started
+
+### Build
+
+Requires a C++ compiler (`g++` or `clang++`) and `make`.
+
+```bash
+make
+```
+
+### Configure
+
+A default configuration is provided at `config/default.conf`, demonstrating:
+
+- Multiple server blocks on different ports
+- Location-based routing with distinct access rules
+- CGI script execution
+- File upload handling
+- Custom error pages
+
+### Run
+
+```bash
+./webserver config/default.conf
+```
+
+By default the server listens on ports `8080`, `8081`, `9000`, `8000`, and `8070`.
 
 ## Testing
 
-#### The project includes a comprehensive test suite to validate robustness:
-```
-# Test slow request handling (fragmented headers)  
-./tests/slow_request.sh  
-  
-# Test chunked transfer encoding  
-./tests/fer_slow_request.sh  
-  
-# Test concurrent connections  
-./tests/concurrent_slow_requests.sh  
-  
-# High-speed load testing  
+```bash
+# Fragmented headers / slow request handling
+./tests/slow_request.sh
+
+# Chunked transfer encoding
+./tests/fer_slow_request.sh
+
+# Concurrent connections
+./tests/concurrent_slow_requests.sh
+
+# High-concurrency load test
 python3 tests/fast_concurrent.py
 ```
 
-#### These tests validate the server's ability to handle partial data, slow clients, and high-concurrency scenarios concurrent_slow_requests.sh:1-7 .
-## Features
-#### HTTP Methods
+These validate the server's handling of partial data, slow clients, and high-concurrency scenarios.
 
-#### GET, POST, DELETE, HEAD HttpRequest.cpp:41-47
-#### HTTP/0.9 protocol support HttpRequest.cpp:48-52
+## References
 
-## Server Configuration
+- [RFC 7230 — HTTP/1.1 Message Syntax and Routing](https://www.rfc-editor.org/rfc/rfc7230)
+- [RFC 7231 — HTTP/1.1 Semantics and Content](https://www.rfc-editor.org/rfc/rfc7231)
+- `epoll(7)` man page
+- 42 Network System Engineering curriculum guidelines
 
-#### Multiple virtual servers with different IP/port combinations
-#### Server name-based virtual hosting
-#### Client body size limits per location
-#### Custom error pages for different status codes
-#### Directory listing (autoindex) control
+## AI usage disclosure
 
-## Request Handling
+AI tools were used as a supplementary aid during development, specifically for:
 
-#### Chunked transfer encoding support HttpRequest.cpp:219-237
-#### Content-Length validation
-#### Host header validation
-#### Request timeout enforcement
+- Suggesting improvements to class hierarchy and separation of concerns
+- Helping identify edge cases in HTTP request parsing (particularly chunked transfer encoding)
+- Assisting in generating test scenarios for concurrent connections and slow clients
+- Structuring this documentation
 
-## Response Generation
+All core logic, implementation, and architectural decisions were made by the project authors.
 
-#### Dynamic response construction based on configuration
-#### Error page serving
-#### File upload handling
-#### CGI script execution with proper environment variable setup
-
-## Technical Choices
-## Architecture
-
-## The server follows a reactor pattern using epoll for event notification. The main components are:
-
-#### Server: Orchestrates the event loop and manages client connections Server.hpp:14-39
-#### Epoll: Wrapper around Linux epoll API for I/O multiplexing
-#### Socket: Handles socket creation, binding, and listening
-#### Client: Manages individual connection state and I/O operations
-#### HttpRequest: State machine for parsing incoming HTTP requests
-#### HttpResponse: Constructs HTTP responses based on request and configuration
-
-## State Machine Design
-
-#### The HTTP parser uses a state-based approach to handle incomplete data gracefully, transitioning between INCOMPLETE, COMPLETE, and ERROR states as data arrives.
-## Resources
-## Documentation & References
-
-## RFC 7230 - HTTP/1.1 Message Syntax and Routing
-#### RFC 7231 - HTTP/1.1 Semantics and Content
-#### Linux epoll(7) man page
-#### 42 Network System Engineering curriculum guidelines
-
-## AI Usage
-
-#### AI was used during the development of this project for:
-
-#### Code structure optimization: Suggesting improvements to the class hierarchy and separation of concerns
-#### Debugging assistance: Helping identify edge cases in HTTP request parsing, particularly around chunked transfer encoding
-#### Test case generation: Assisting in creating comprehensive test scenarios for concurrent connections and slow clients
-#### Documentation: Helping structure technical documentation and generate architectural diagrams
-
-## AI tools were used as a supplementary resource to accelerate development and ensure code quality, but all core logic, implementation details, and architectural decisions were made by the project authors.
 ## Notes
 
-## This README is based on the current codebase structure. Some implementation details may vary depending on the specific branch or version of the project. The server is designed to be compliant with the 42 curriculum requirements while demonstrating production-ready coding practices in C++.
+This README reflects the current codebase structure; some details may vary by branch or version. The server targets full compliance with 42 curriculum requirements while following production-oriented C++ practices.
