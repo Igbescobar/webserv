@@ -29,7 +29,6 @@ The server handles multiple concurrent connections through an event-driven, reac
 
 - Chunked transfer encoding
 - `Content-Length` validation
-- `Host` header validation
 - Request timeout enforcement
 
 ### Response generation
@@ -60,10 +59,26 @@ The HTTP parser transitions between `INCOMPLETE`, `COMPLETE`, and `ERROR` states
 
 ### Build
 
-Requires a C++ compiler (`g++` or `clang++`) and `make`.
+Requires a C++ compiler (`g++`) and `make`.
+
+For object files cleaning use `make clean` and and for full clean including execution file use `make fclean`
+
+To do a full clean and remake use `make re`
 
 ```bash
 make
+
+make clean
+
+make fclean
+
+make r
+
+make clean
+
+make fclean
+
+make re
 ```
 
 ### Configure
