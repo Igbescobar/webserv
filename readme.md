@@ -21,7 +21,6 @@ The server handles multiple concurrent connections through an event-driven, reac
 ### Server configuration
 
 - Multiple virtual servers across different IP/port combinations
-- Server-name-based virtual hosting
 - Per-location client body size limits
 - Custom error pages per status code
 - Directory listing (autoindex) toggle
