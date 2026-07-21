@@ -118,8 +118,6 @@ AI tools were used as a supplementary aid during development, specifically for:
 - Assisting in generating test scenarios for concurrent connections and slow clients
 - Structuring this documentation
 
-All core logic, implementation, and architectural decisions were made by the project authors.
-
 ## Notes
 
 This README reflects the current codebase structure; some details may vary by branch or version. The server targets full compliance with 42 curriculum requirements while following production-oriented C++ practices.
