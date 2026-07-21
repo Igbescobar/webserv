@@ -1,4 +1,4 @@
-This project has been created as part of the 42 curriculum by igngonza, marcolop, fdurban-.
+__This project has been created as part of the 42 curriculum by igngonza, marcolop, fdurban-.__
 # webserv
 ## Description
 A high-performance HTTP/1.1 web server written in C++98, implementing non-blocking I/O with the Linux `epoll` API.
@@ -10,13 +10,13 @@ The server handles multiple concurrent connections through an event-driven, reac
 - **Non-blocking I/O** — `epoll`-based multiplexing to monitor multiple file descriptors without blocking
 - **HTTP request parsing** — state-machine parser that handles fragmented TCP packets and chunked transfer encoding
 - **Configuration management** — flexible config file parser supporting multiple server blocks and location-based routing
-- **CGI support** — executes CGI scripts for PHP and Python
+- **CGI support** — executes CGI scripts for Python and Bash
 - **Timeout enforcement** — idle and absolute connection timeouts to prevent resource exhaustion
 
 ### HTTP methods and protocol support
 
 - `GET`, `POST`, `DELETE`, `HEAD`
-- HTTP/0.9 compatibility mode
+- HTTP/1.0 compatibility mode
 
 ### Server configuration
 
@@ -61,18 +61,12 @@ The HTTP parser transitions between `INCOMPLETE`, `COMPLETE`, and `ERROR` states
 
 Requires a C++ compiler (`g++`) and `make`.
 
-For object files cleaning use `make clean` and and for full clean including execution file use `make fclean`
+For object files cleaning use `make clean` and for full cleaning including execution file use `make fclean`
 
-To do a full clean and remake use `make re`
+To do a full clean and recompiling use `make re`
 
 ```bash
 make
-
-make clean
-
-make fclean
-
-make r
 
 make clean
 
@@ -105,9 +99,6 @@ By default the server listens on ports `8080`, `8081`, `9000`, `8000`, and `8070
 # Fragmented headers / slow request handling
 ./tests/slow_request.sh
 
-# Chunked transfer encoding
-./tests/fer_slow_request.sh
-
 # Concurrent connections
 ./tests/concurrent_slow_requests.sh
 
@@ -119,10 +110,12 @@ These validate the server's handling of partial data, slow clients, and high-con
 
 ## References
 
-- [RFC 7230 — HTTP/1.1 Message Syntax and Routing](https://www.rfc-editor.org/rfc/rfc7230)
-- [RFC 7231 — HTTP/1.1 Semantics and Content](https://www.rfc-editor.org/rfc/rfc7231)
+- [RFC 9110: STD 97: HTTP Semantics](https://www.rfc-editor.org/info/rfc9110/)
 - `epoll(7)` man page
-- 42 Network System Engineering curriculum guidelines
+- [Webserver guideline and basic concepts](https://m4nnb3ll.medium.com/webserv-building-a-non-blocking-web-server-in-c-98-a-42-project-04c7365e4ec7)
+- [I/O multiplexing: Doing I/O with many sources using select, poll and epoll calls in Linux.](https://youtu.be/dEHZb9JsmOU?si=EBSWWza2JPiB15fi)
+- [Linux's epoll explained](https://www.youtube.com/watch?v=eaT6XtfyGHQ&t=190s)
+- [99% of Developers Don't Get Sockets](https://www.youtube.com/watch?v=D26sUZ6DHNQ&t=165s)
 
 ## AI usage disclosure
 
