@@ -6,6 +6,8 @@
 * README.md
 * free resources in Cgi constructor before throwing error
 * go over evaluation sheet testing everything
+* handle cgi script with error
+    * return an error
 
 # tests
 

@@ -221,8 +221,6 @@ std::string Cgi::extractExtension() {
 std::string Cgi::getInterpreter(const std::string &ext) {
   if (ext == ".py")
     return "/usr/bin/python3";
-  if (ext == ".php")
-    return "/usr/bin/php-cgi";
   if (ext == ".sh")
     return "/bin/bash";
   if (ext == ".bla") {
