@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Webserv Evaluation Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: auto;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, .15);
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        input {
+            padding: 8px;
+        }
+
+        #output {
+            background: #111;
+            color: #00ff00;
+            padding: 15px;
+            min-height: 150px;
+            white-space: pre-wrap;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <h1> WEBSERV EVALUATION DASHBOARD</h1>
+
+    <div class="card">
+
+        <h2>Configuration Summary</h2>
+
+        <ul>
+            <li>GET → /hellothere.html</li>
+            <li>POST → /api/postTest.txt</li>
+            <li>DELETE → /delete-test/delete_me.txt</li>
+            <li>Autoindex → /media/images/</li>
+            <li>Upload → /upload</li>
+            <li>Redirect → /old-page.html</li>
+            <li>404 → non-existing file</li>
+            <li>Ports → 8080 and 8081</li>
+        </ul>
+
+    </div>
+
+    <div class="card">
+
+        <h2>GET Method</h2>
+
+        <p>Expected: 200 OK</p>
+
+        <button onclick="testGet()">
+            GET hellothere
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>POST Method (/api/)</h2>
+
+        <p>Expected: 200 OK</p>
+
+        <input id="postData" value="Hello Webserv">
+
+        <button onclick="testPost()">
+            POST /api/
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>DELETE Method</h2>
+
+        <p>Expected: delete_me.txt removed</p>
+
+        <button onclick="testDelete()">
+            DELETE delete_me.txt
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Upload Test</h2>
+
+        <form id="uploadForm">
+
+            <input type="file" id="uploadFile">
+
+            <button type="submit">
+                Upload File
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Autoindex</h2>
+
+        <p>Expected: directory listing visible</p>
+
+        <button onclick="window.open('/media/images/','_blank')">
+            Open Autoindex
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Redirect Test</h2>
+
+        <p>Expected: 301 → /new-page.html</p>
+
+        <button onclick="window.open('/old-page.html','_blank')">
+            Test Redirect
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>404 Error Page</h2>
+
+        <button onclick="window.open('/definitely-does-not-exist','_blank')">
+            Trigger 404
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Ports Test</h2>
+
+        <button onclick="window.open('http://localhost:8080','_blank')">
+            Port 8080
+        </button>
+
+        <button onclick="window.open('http://127.0.0.1:8081','_blank')">
+            Port 8081
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Response Output</h2>
+
+        <pre id="output">
+Ready...
+</pre>
+
+    </div>
+
+    <script>
+
+        function print(text) {
+            document.getElementById("output").textContent = text;
+        }
+
+        async function testGet() {
+            window.open('/hellothere.html', '_blank');
+            try {
+                const res = await fetch("/hellothere.html");
+
+                const text = await res.text();
+
+                print(
+                    "STATUS: " + res.status +
+                    "\n\n" +
+                    text.substring(0, 1000)
+                );
+            }
+            catch (e) {
+                print(e);
+            }
+        }
+
+        async function testPost() {
+            try {
+                const body =
+                    document.getElementById("postData").value;
+
+                const res = await fetch("/api/postTest.txt",
+                    {
+                        method: "POST",
+                        headers:
+                        {
+                            "Content-Type": "text/plain"
+                        },
+                        body: body
+                    });
+
+                const text = await res.text();
+
+                print(
+                    "STATUS: " + res.status +
+                    "\n\n" +
+                    text
+                );
+            }
+            catch (e) {
+                print(e);
+            }
+        }
+
+        async function testDelete() {
+            try {
+                const res = await fetch(
+                    "/delete-test/delete_me.txt",
+                    {
+                        method: "DELETE"
+                    });
+
+                const text = await res.text();
+
+                print(
+                    "STATUS: " + res.status +
+                    "\n\n" +
+                    text
+                );
+            }
+            catch (e) {
+                print(e);
+            }
+        }
+
+        document
+            .getElementById("uploadForm")
+            .addEventListener(
+                "submit",
+                async function (e) {
+                    e.preventDefault();
+
+                    const file =
+                        document.getElementById("uploadFile")
+                            .files[0];
+
+                    if (!file) {
+                        print("Select a file first");
+                        return;
+                    }
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "file",
+                        file
+                    );
+
+                    const res =
+                        await fetch("/upload",
+                            {
+                                method: "POST",
+                                body: formData
+                            });
+
+                    const text =
+                        await res.text();
+
+                    print(
+                        "STATUS: " +
+                        res.status +
+                        "\n\n" +
+                        text
+                    );
+                });
+
+    </script>
+
+</body>
+
+</html>
