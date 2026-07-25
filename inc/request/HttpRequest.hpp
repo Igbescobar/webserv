@@ -20,6 +20,7 @@ private:
   std::map<std::string, std::string> headers;
   std::string body;
   size_t headerStart;
+  size_t chunkedBodySearchPos;
 
   void parseRequestLine();
   void parseRequestLineValues(const std::string &header);
@@ -37,6 +38,7 @@ private:
   long getBodySizeLimit() const;
   void checkEarlyBodySizeLimit();
   void checkOngoingBodySizeLimit();
+  size_t decodedChunkedBodySize() const;
 
 public:
   HttpRequest();

@@ -1,10 +1,12 @@
 #include "parser_config/ConfigParser.hpp"
 #include "server/Server.hpp"
+#include <csignal>
 #include <iostream>
 
 void logServerConfig(const ServerConfig &config, int serverIndex);
 
 int main(int argc, char **argv) {
+  signal(SIGPIPE, SIG_IGN);
   if (argc > 2) {
     std::cerr
         << "Error: Too many arguments. Usage: ./webserv [config_file_path]"
@@ -21,8 +23,6 @@ int main(int argc, char **argv) {
     parser.validateServerConfigs();
 
     const std::vector<ServerConfig> &servers = parser.getServerConfigs();
-    std::cout << "--- Found " << servers.size()
-              << " server configurations ---\n";
 
     for (size_t i = 0; i < servers.size(); ++i) {
       logServerConfig(servers[i], i);
@@ -39,8 +39,9 @@ int main(int argc, char **argv) {
 }
 
 void logServerConfig(const ServerConfig &config, int serverIndex) {
+  return;
   std::cout << "\n=== Server " << serverIndex << " ===" << std::endl;
-  (void)serverIndex;
+
   const std::vector<std::string> &ips = config.getIPs();
   const std::vector<int> &ports = config.getPorts();
   for (size_t j = 0; j < ips.size(); ++j) {

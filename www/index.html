@@ -60,8 +60,6 @@
             <li>DELETE → /delete-test/delete_me.txt</li>
             <li>Autoindex → /media/images/</li>
             <li>Upload → /upload</li>
-            <li>PHP CGI → /scripts/php/test.php</li>
-            <li>Python CGI → /scripts/python/test.py</li>
             <li>Redirect → /old-page.html</li>
             <li>404 → non-existing file</li>
             <li>Ports → 8080 and 8081</li>
@@ -132,42 +130,6 @@
         <button onclick="window.open('/media/images/','_blank')">
             Open Autoindex
         </button>
-
-    </div>
-
-    <div class="card">
-
-        <h2>PHP CGI</h2>
-
-        <button onclick="window.open('/scripts/php/test.php','_blank')">
-            Run PHP CGI
-        </button>
-
-    </div>
-
-    <div class="card">
-
-        <h2>Python CGI</h2>
-
-        <button onclick="window.open('/scripts/python/test.py','_blank')">
-            Run Python CGI
-        </button>
-
-    </div>
-
-    <div class="card">
-
-        <h2>CGI POST</h2>
-
-        <form action="/scripts/python/test.py" method="POST">
-
-            <input name="message" value="CGI POST TEST">
-
-            <button>
-                POST to CGI
-            </button>
-
-        </form>
 
     </div>
 

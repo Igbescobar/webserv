@@ -10,6 +10,7 @@ HttpRequest::HttpRequest(ServerConfig serverConfig)
     : serverConfig(serverConfig), method("GET"), uri("/") {
   errorCode = -1;
   state = INCOMPLETE;
+  chunkedBodySearchPos = 0;
 }
 
 HttpRequest::~HttpRequest() {}
@@ -19,6 +20,13 @@ HttpRequest::HttpRequest(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
+  uri = other.uri;
+  version = other.version;
+  headers = other.headers;
+  body = other.body;
+  headerStart = other.headerStart;
+  chunkedBodySearchPos = other.chunkedBodySearchPos;
 }
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
@@ -26,6 +34,13 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &other) {
   buf = other.buf;
   state = other.state;
   errorCode = other.errorCode;
+  method = other.method;
+  uri = other.uri;
+  version = other.version;
+  headers = other.headers;
+  body = other.body;
+  headerStart = other.headerStart;
+  chunkedBodySearchPos = other.chunkedBodySearchPos;
   return *this;
 }
 
@@ -234,7 +249,14 @@ void HttpRequest::parseBody() {
 
 bool HttpRequest::isBodyComplete() {
   if (getHeader("transfer-encoding") == "chunked") {
-    return buf.find("0\r\n\r\n") != std::string::npos;
+    const std::string terminator = "0\r\n\r\n";
+    size_t searchFrom = chunkedBodySearchPos > terminator.size() - 1
+                            ? chunkedBodySearchPos - (terminator.size() - 1)
+                            : 0;
+    if (buf.find(terminator, searchFrom) != std::string::npos)
+      return true;
+    chunkedBodySearchPos = buf.size();
+    return false;
   }
   if (!getHeader("content-length").empty()) {
     size_t bodyStart = buf.find(DELIMETER) + 4;
@@ -303,7 +325,11 @@ void HttpRequest::checkOngoingBodySizeLimit() {
   if (limit > -1) {
     size_t bodyStart = buf.find(DELIMETER);
     if (bodyStart != std::string::npos) {
-      size_t currentBodySize = buf.size() - (bodyStart + 4);
+      size_t currentBodySize;
+      if (getHeader("transfer-encoding") == "chunked")
+        currentBodySize = decodedChunkedBodySize();
+      else
+        currentBodySize = buf.size() - (bodyStart + 4);
       if (currentBodySize > static_cast<size_t>(limit)) {
         errorCode = 413;
         state = ERROR;
@@ -312,7 +338,60 @@ void HttpRequest::checkOngoingBodySizeLimit() {
   }
 }
 
+// Sums only the real content bytes of whatever chunks have arrived so far,
+// skipping the chunk-size lines and CRLF framing that parseChunkedBody()
+// would otherwise leave counted as if they were body content. A chunk
+// still being received counts for however many of its bytes have actually
+// arrived, so a client can't dodge the limit by trickling one huge chunk.
+size_t HttpRequest::decodedChunkedBodySize() const {
+  size_t bodyStart = buf.find(DELIMETER);
+  if (bodyStart == std::string::npos)
+    return 0;
+
+  size_t pos = bodyStart + 4;
+  size_t total = 0;
+
+  while (pos < buf.size()) {
+    size_t chunkSizeEnd = buf.find("\r\n", pos);
+    if (chunkSizeEnd == std::string::npos)
+      break; // chunk-size line not fully received yet
+
+    char *endptr;
+    size_t chunkSize =
+        std::strtoul(buf.substr(pos, chunkSizeEnd - pos).c_str(), &endptr, 16);
+    if (*endptr != '\0' || chunkSize == 0)
+      break; // malformed, or the terminating zero-size chunk
+
+    size_t dataStart = chunkSizeEnd + 2;
+    size_t available = buf.size() - dataStart;
+    if (available < chunkSize) {
+      total += available;
+      break;
+    }
+    total += chunkSize;
+    pos = dataStart + chunkSize + 2;
+  }
+  return total;
+}
+
 void HttpRequest::print() const {
+  return;
+  std::cout << "=== HttpRequest ===\n";
+  std::cout << "State:      "
+            << (state == INCOMPLETE ? "INCOMPLETE"
+                : state == COMPLETE ? "COMPLETE"
+                                    : "ERROR")
+            << "\n";
+  std::cout << "ErrorCode:  " << errorCode << "\n";
+  std::cout << "Method:     " << method << "\n";
+  std::cout << "URI:        " << uri << "\n";
+  std::cout << "Version:    " << version << "\n";
+  std::cout << "Headers:\n";
+  for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+       it != headers.end(); ++it)
+    std::cout << "  " << it->first << ": " << it->second << "\n";
+  std::cout << "Body:       " << body << "\n";
+  std::cout << "Buf size:   " << buf.size() << "\n";
 }
 
 const std::string &HttpRequest::getMethod() const { return this->method; }

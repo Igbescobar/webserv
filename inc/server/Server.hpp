@@ -1,6 +1,5 @@
 #pragma once
 
-#include "cgi/Cgi.hpp"
 #include "parser_config/ConfigParser.hpp"
 #include "parser_config/ServerConfig.hpp"
 #include "server/Client.hpp"

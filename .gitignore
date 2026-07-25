@@ -8,5 +8,5 @@ obj/
 my_tester
 compile_commands.json
 .cache/
-.cgi_tester
-.tester
+tester
+cgi_tester

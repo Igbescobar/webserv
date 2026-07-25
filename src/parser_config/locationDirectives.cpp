@@ -1,5 +1,7 @@
 #include "parser_config/ConfigParser.hpp"
 #include "parser_config/LocationConfig.hpp"
+#include <cctype>
+#include <cstdlib>
 #include <stdexcept>
 
 void ConfigParser::parseLocationRoot(LocationConfig &location) {
@@ -51,6 +53,17 @@ void ConfigParser::parseLocationAllowedMethods(LocationConfig &location) {
 void ConfigParser::parseLocationReturn(LocationConfig &location) {
   consumeToken("return");
   validateHasValue("return");
+
+  const std::string firstToken = peekToken();
+  bool isCode = !firstToken.empty();
+  for (size_t i = 0; isCode && i < firstToken.size(); i++) {
+    if (!std::isdigit(static_cast<unsigned char>(firstToken[i])))
+      isCode = false;
+  }
+  if (isCode) {
+    location.setReturnCode(std::atoi(firstToken.c_str()));
+    tokenPosition++;
+  }
 
   std::string target;
   while (hasMoreTokens() && peekToken() != ";") {

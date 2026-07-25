@@ -2,7 +2,7 @@
 
 #include <string>
 
-#define SOCKET_MAX_CONNECTIONS 10
+#define SOCKET_MAX_CONNECTIONS 128
 
 using namespace std;
 

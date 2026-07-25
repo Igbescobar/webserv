@@ -1,38 +1,52 @@
 #pragma once
+
 #include "request/HttpRequest.hpp"
 #include "server/Server.hpp"
-#include <iostream>
 #include <string>
 
+#define CGI_SAMPLE_OUTPUT                                                      \
+  "Content-Type: text/plain\n"                                                 \
+  "Content-Length: 18\n"                                                       \
+  "\n"                                                                         \
+  "CGI_SAMPLE_OUTPUT\n"
+
 class Server;
+class Client;
+class Cgi;
+
 class Cgi {
 private:
-  HttpRequest &request;
-  const LocationConfig &location;
-  std::string scriptPath;
-  std::string interpreter;
-  std::string query;
+  Server &server;
+  std::string path;
   std::string output;
+  HttpRequest _req;
+  int outputPipe[2];
+  int bodyPipe[2];
   t_state state;
-  int clientFd;
-  int pipeFd;
-  pid_t pid;
+  pid_t childPid;
+  std::string reqBody;
+  std::string interpreter;
+  std::string::size_type _bodyBytesSent;
 
-  std::string getInterpreter(const std::string &ext);
-  std::string extractScriptPath();
-  std::string extractExtension();
-  std::string extractQuery();
   std::vector<std::string> buildEnv();
-  std::string readPipe(int stdoutPipe[2]);
-  void setupChild(int stdinpipe[2], int stdoutpipe[2], char *argv[],
-                  char **envp);
+  void addHeaderEnvVars(std::vector<std::string> &env);
+  std::string headerNameToEnvVar(const std::string &headerName);
+  std::string extractQuery();
+  std::string extractPath();
+  void sendingBody();
+  void readingOutput();
+  std::string extractExtension();
+  std::string getInterpreter(const std::string &ext);
+
+  Cgi(const Cgi &other);
+  Cgi &operator=(const Cgi &other);
+
 public:
-  Cgi(HttpRequest &request, const LocationConfig &location, int clientFd);
+  Cgi(Server &server, std::string path, HttpRequest &req);
   ~Cgi();
-  void execute(Server &server);
+
+  void handleEvent(int triggeredFd);
+
   std::string getOutput();
-  bool handleEvent();
   t_state getState();
-  std::string buildResponse(std::string &output);
-  int getClientFd();
 };

@@ -7,9 +7,11 @@
 #include "server/Server.hpp"
 
 #define BUF_SIZE 4096
-#define IDLE_LIMIT 30
-#define ABSOLUTE_LIMIT 180
+#define IDLE_LIMIT 3000
+#define ABSOLUTE_LIMIT 18000
 #define REQUEST_LIMIT 200000000
+
+#define INTERNAL_SERVER_ERROR 500
 
 class Server;
 class Cgi;
@@ -25,12 +27,11 @@ private:
   time_t lastActivity;
   Server &server;
   Cgi *cgi;
+  std::string::size_type bytesSent;
+  int reference;
 
   bool read(int clientFd);
   bool write(int clientFd);
-
-  bool isCGI();
-  const LocationConfig *getMatchingLocation(const std::string &uri);
 
   void handleRequestState(t_state state);
 
@@ -42,5 +43,4 @@ public:
 
   bool handleEvent(uint32_t eventsMask);
   bool isTimedOut();
-  void setResponse(const std::string &response);
 };
